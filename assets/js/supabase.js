@@ -1129,25 +1129,39 @@ async function getAllAdmins() {
 async function getAdminByAuthId(authUid) {
   try {
     const db = getDB();
+    console.log('[AMH] getAdminByAuthId called with UID:', authUid);
 
-    // Try RPC first (bypasses RLS, works even before policy is set)
+    // Try RPC first (SECURITY DEFINER bypasses RLS)
     const { data: rpcData, error: rpcError } = await db
       .rpc('get_admin_by_id', { p_id: authUid });
 
+    console.log('[AMH] RPC result:', { rpcData, rpcError });
+
     if (!rpcError && rpcData && rpcData.length > 0) {
+      console.log('[AMH] RPC success:', rpcData[0]);
       return { data: rpcData[0], error: null };
     }
 
-    // Fallback: direct table query (works if RLS policy is correct)
+    if (rpcError) {
+      console.warn('[AMH] RPC failed (function may not exist):', rpcError.message);
+    } else {
+      console.warn('[AMH] RPC returned empty — no admin found with UID:', authUid);
+    }
+
+    // Fallback: direct table query
+    console.log('[AMH] Trying direct table query...');
     const { data, error } = await db
       .from('admin_users')
       .select('*')
       .eq('id', authUid)
       .single();
 
+    console.log('[AMH] Direct query result:', { data, error });
+
     if (error) return { data: null, error: error.message };
     return { data, error: null };
   } catch (err) {
+    console.error('[AMH] getAdminByAuthId exception:', err.message);
     return { data: null, error: err.message };
   }
 }
