@@ -1122,12 +1122,23 @@ async function getAllAdmins() {
 
 /**
  * Fetch admin record by their Supabase Auth UID.
+ * Uses RPC function to bypass RLS on first login.
  * @param {string} authUid
  * @returns {Promise<{data: Object|null, error: string|null}>}
  */
 async function getAdminByAuthId(authUid) {
   try {
     const db = getDB();
+
+    // Try RPC first (bypasses RLS, works even before policy is set)
+    const { data: rpcData, error: rpcError } = await db
+      .rpc('get_admin_by_id', { p_id: authUid });
+
+    if (!rpcError && rpcData && rpcData.length > 0) {
+      return { data: rpcData[0], error: null };
+    }
+
+    // Fallback: direct table query (works if RLS policy is correct)
     const { data, error } = await db
       .from('admin_users')
       .select('*')
