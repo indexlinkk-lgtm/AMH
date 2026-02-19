@@ -243,11 +243,18 @@ async function handleAdminLogin(event) {
     }
 
     // Step 2: Fetch admin_users record
+    console.log('[AMH] Auth success. UID:', authData.user.id);
     const { data: adminRecord, error: adminError } = await getAdminByAuthId(authData.user.id);
+    console.log('[AMH] getAdminByAuthId result:', { adminRecord, adminError });
 
     if (adminError || !adminRecord) {
+      console.error('[AMH] Admin lookup failed:', adminError);
       if (errorDisplay) {
-        errorDisplay.textContent = 'Admin account not found. Please contact the system administrator.';
+        errorDisplay.querySelector
+          ? (errorDisplay.querySelector('#admin-error-text') || errorDisplay).textContent =
+              'Admin account not found. UID: ' + authData.user.id
+          : null;
+        errorDisplay.textContent = 'Admin record not found for UID: ' + authData.user.id + '. Error: ' + (adminError || 'null record');
         errorDisplay.style.display = 'flex';
       }
       await db.auth.signOut();
@@ -543,3 +550,4 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize mobile navbar if present
   initAdminNavbarMobile();
 });
+
