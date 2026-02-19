@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — AMH Hospital System</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<!-- Admin Navbar -->
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Admin</span>
+      <span class="navbar__brand-sub">Hospital Management</span>
+    </div>
+  </a>
+
+  <nav class="navbar__nav" aria-label="Admin navigation">
+    <a href="../admin/dashboard.html" class="navbar__link navbar__link--active" aria-current="page">🏠 Dashboard</a>
+    <a href="../admin/opd/bookings.html" class="navbar__link" data-roles="super_admin opd_admin">📋 OPD Queue</a>
+    <a href="../admin/opd/slots.html" class="navbar__link" data-roles="super_admin opd_admin">⏰ OPD Slots</a>
+    <a href="../admin/clinic/bookings.html" class="navbar__link" data-roles="super_admin clinic_admin">🏥 Clinic Queue</a>
+    <a href="../admin/patients/verify.html" class="navbar__link" data-roles="super_admin opd_admin clinic_admin">🔍 Verify Patient</a>
+    <a href="../admin/super/admins.html" class="navbar__link" data-roles="super_admin">⚙️ Super Admin</a>
+  </nav>
+
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <div>
+        <div class="navbar__user-name" id="admin-nav-name">Loading...</div>
+      </div>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../admin/dashboard.html" class="navbar__link navbar__link--active">🏠 Dashboard</a>
+  <a href="../admin/opd/bookings.html" class="navbar__link" data-roles="super_admin opd_admin">📋 OPD Queue</a>
+  <a href="../admin/clinic/bookings.html" class="navbar__link" data-roles="super_admin clinic_admin">🏥 Clinic Queue</a>
+  <a href="../admin/patients/verify.html" class="navbar__link" data-roles="super_admin opd_admin clinic_admin">🔍 Verify Patient</a>
+  <a href="../admin/super/admins.html" class="navbar__link" data-roles="super_admin">⚙️ Super Admin</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width: 1200px; margin: var(--navbar-height) auto 0;">
+
+  <!-- Page Header -->
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">Admin Dashboard</h1>
+      <p class="page-header__subtitle" id="dashboard-greeting">Good morning!</p>
+    </div>
+    <div style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+      <span id="dashboard-date"></span>
+    </div>
+  </div>
+
+  <!-- Role Badge & Quick Nav -->
+  <div class="alert alert--info mb-8" role="region" aria-label="Admin role information">
+    <span class="alert__icon">👤</span>
+    <div class="alert__content flex-between" style="flex-wrap:wrap;gap:var(--space-3);">
+      <div>
+        <div class="alert__title">
+          Logged in as: <span id="admin-full-name">—</span>
+          &nbsp;<span id="admin-role-badge" class="badge">—</span>
+        </div>
+        <div class="alert__text">Access level reflects your assigned role. Contact super admin to change permissions.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY'S STATS (all roles) -->
+  <section aria-labelledby="stats-heading" class="mb-8">
+    <h2 class="section-header__title" id="stats-heading" style="margin-bottom:var(--space-5);">Today's Overview</h2>
+    <div class="grid grid--4" id="stats-grid">
+      <!-- Skeleton stats -->
+      <div class="stat-card"><div class="skeleton skeleton--card"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton--card"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton--card"></div></div>
+      <div class="stat-card"><div class="skeleton skeleton--card"></div></div>
+    </div>
+  </section>
+
+  <!-- QUICK ACTION CARDS (role-based) -->
+  <section aria-labelledby="actions-heading" class="mb-8">
+    <h2 class="section-header__title" id="actions-heading" style="margin-bottom:var(--space-5);">Quick Actions</h2>
+    <div class="grid grid--3" id="quick-actions-grid">
+      <!-- Rendered by JS based on role -->
+    </div>
+  </section>
+
+  <!-- RECENT OPD BOOKINGS (opd_admin, super) -->
+  <section data-roles="super_admin opd_admin" aria-labelledby="recent-opd-heading" class="mb-8">
+    <div class="section-header">
+      <div>
+        <h2 class="section-header__title" id="recent-opd-heading">Today's OPD Queue</h2>
+        <p class="section-header__subtitle" id="opd-queue-count">Loading...</p>
+      </div>
+      <a href="../admin/opd/bookings.html" class="btn btn--ghost btn--sm">Full Queue →</a>
+    </div>
+
+    <div class="card card--flat" style="padding:0;">
+      <div class="table-wrapper" style="border-radius:var(--radius-xl);overflow:hidden;">
+        <table class="data-table" aria-label="Today's OPD queue preview">
+          <thead>
+            <tr>
+              <th scope="col">Slot #</th>
+              <th scope="col">Patient Name</th>
+              <th scope="col">Patient ID</th>
+              <th scope="col">Time Slot</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody id="opd-preview-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:var(--space-4);">
+              <div class="spinner" style="margin:0 auto;border-color:rgba(26,60,110,0.2);border-top-color:var(--color-primary);width:32px;height:32px;border-width:3px;"></div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/audit.js"></script>
+<script src="../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+
+async function initAdminDashboard() {
+  adminSession = await requireAdminAuth();
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+
+  // Show role info
+  const nameEl = document.getElementById('admin-full-name');
+  const roleBadge = document.getElementById('admin-role-badge');
+  if (nameEl) nameEl.textContent = adminSession.full_name;
+  if (roleBadge) {
+    roleBadge.textContent = getRoleLabel(adminSession.role);
+    roleBadge.className = `badge ${getRoleBadgeClass(adminSession.role)}`;
+  }
+
+  // Date/time greeting
+  const now = getColomboNow();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greetingEl = document.getElementById('dashboard-greeting');
+  const dateEl = document.getElementById('dashboard-date');
+  if (greetingEl) greetingEl.textContent = `${greeting}, ${adminSession.full_name}!`;
+  if (dateEl) dateEl.textContent = formatDate(now, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Colombo' });
+
+  // Load data
+  await Promise.all([
+    loadTodayStats(),
+    renderQuickActions(),
+    loadOPDPreview(),
+  ]);
+}
+
+/**
+ * Load today's OPD statistics.
+ */
+async function loadTodayStats() {
+  const grid = document.getElementById('stats-grid');
+  if (!grid) return;
+
+  const today = getColomboDateString();
+  const stats = await getTodaysOPDStats(today);
+
+  // Get total patients (approximate)
+  let totalPatients = 0;
+  try {
+    const db = getDB();
+    const { count } = await db.from('patients').select('id', { count: 'exact', head: true }).eq('is_active', true);
+    totalPatients = count || 0;
+  } catch { totalPatients = 0; }
+
+  grid.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--primary" aria-hidden="true">📋</div>
+      <div class="stat-card__info">
+        <div class="stat-card__value">${formatNumber(stats.total)}</div>
+        <div class="stat-card__label">Today's OPD Bookings</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--success" aria-hidden="true">✅</div>
+      <div class="stat-card__info">
+        <div class="stat-card__value">${formatNumber(stats.completed)}</div>
+        <div class="stat-card__label">Completed Today</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--warning" aria-hidden="true">⏳</div>
+      <div class="stat-card__info">
+        <div class="stat-card__value">${formatNumber(stats.pending)}</div>
+        <div class="stat-card__label">Pending</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__icon stat-card__icon--secondary" aria-hidden="true">👥</div>
+      <div class="stat-card__info">
+        <div class="stat-card__value">${formatNumber(totalPatients)}</div>
+        <div class="stat-card__label">Registered Patients</div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render role-appropriate quick action cards.
+ */
+async function renderQuickActions() {
+  const grid = document.getElementById('quick-actions-grid');
+  if (!grid || !adminSession) return;
+
+  const actions = [];
+  const role = adminSession.role;
+
+  if (['super_admin', 'opd_admin'].includes(role)) {
+    actions.push({
+      icon: '📋', title: 'OPD Queue', desc: "View and manage today's OPD patients",
+      href: '/admin/opd/bookings.html', color: 'var(--color-primary)',
+    });
+    actions.push({
+      icon: '⏰', title: 'OPD Slots', desc: 'Manage appointment time templates',
+      href: '/admin/opd/slots.html', color: 'var(--color-secondary)',
+    });
+  }
+
+  if (['super_admin', 'clinic_admin'].includes(role)) {
+    actions.push({
+      icon: '🏥', title: 'Clinic Queue', desc: 'View and manage clinic appointments',
+      href: '/admin/clinic/bookings.html', color: 'var(--color-secondary)',
+    });
+    actions.push({
+      icon: '🏥', title: 'Manage Clinics', desc: 'Create and configure specialist clinics',
+      href: '/admin/clinic/manage.html', color: 'var(--color-primary)',
+    });
+  }
+
+  if (['super_admin', 'opd_admin', 'clinic_admin'].includes(role)) {
+    actions.push({
+      icon: '🔍', title: 'Verify Patient', desc: 'Scan QR or enter ID to verify patient',
+      href: '/admin/patients/verify.html', color: 'var(--color-success)',
+    });
+    actions.push({
+      icon: '💊', title: 'Issue Prescription', desc: 'Issue medicine prescription to a patient',
+      href: '/admin/patients/prescription.html', color: 'var(--color-accent)',
+    });
+  }
+
+  if (['super_admin', 'user_creator'].includes(role)) {
+    actions.push({
+      icon: '🖥️', title: 'Kiosk Registration', desc: 'Self-service patient registration kiosk',
+      href: '/admin/kiosk/register.html', color: 'var(--color-primary)',
+    });
+  }
+
+  if (role === 'super_admin') {
+    actions.push({
+      icon: '👤', title: 'Manage Admins', desc: 'Create and manage admin accounts',
+      href: '/admin/super/admins.html', color: 'var(--color-primary-dark)',
+    });
+    actions.push({
+      icon: '🚫', title: 'Blocked Dates', desc: 'Manage holidays and closures',
+      href: '/admin/super/blocked-dates.html', color: 'var(--color-danger)',
+    });
+    actions.push({
+      icon: '📊', title: 'Reports', desc: 'Analytics and utilization reports',
+      href: '/admin/super/reports.html', color: 'var(--color-secondary)',
+    });
+    actions.push({
+      icon: '📜', title: 'Audit Log', desc: 'View all system audit logs',
+      href: '/admin/super/audit-log.html', color: 'var(--color-primary)',
+    });
+  }
+
+  grid.innerHTML = actions.map(action => `
+    <a
+      href="${action.href}"
+      class="card card--hoverable"
+      style="text-decoration:none; display:flex; flex-direction:column;"
+      aria-label="${sanitizeText(action.title)}"
+    >
+      <div style="font-size:36px; margin-bottom:var(--space-3);">${action.icon}</div>
+      <h3 style="font-size:var(--font-size-md);color:${action.color};margin-bottom:var(--space-2);">${sanitizeText(action.title)}</h3>
+      <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);flex:1;">${sanitizeText(action.desc)}</p>
+      <div style="margin-top:var(--space-4);">
+        <span class="btn btn--ghost btn--sm" style="pointer-events:none;">Open →</span>
+      </div>
+    </a>
+  `).join('');
+}
+
+/**
+ * Load today's OPD queue preview (top 5).
+ */
+async function loadOPDPreview() {
+  const tbody = document.getElementById('opd-preview-tbody');
+  const countEl = document.getElementById('opd-queue-count');
+  if (!tbody) return;
+
+  // Only relevant for OPD-capable roles
+  const role = adminSession?.role;
+  const opdSection = document.querySelector('[data-roles*="opd_admin"]');
+
+  if (!['super_admin', 'opd_admin'].includes(role)) {
+    if (opdSection) opdSection.style.display = 'none';
+    return;
+  }
+
+  try {
+    const today = getColomboDateString();
+    const { data: bookings, error } = await getTodaysOPDQueue(today);
+
+    if (error || !bookings) {
+      tbody.innerHTML = `<tr><td colspan="5" style="color:var(--color-danger);text-align:center;padding:var(--space-4);">Failed to load queue.</td></tr>`;
+      return;
+    }
+
+    if (countEl) countEl.textContent = `${bookings.length} booking${bookings.length !== 1 ? 's' : ''} today`;
+
+    const preview = bookings.slice(0, 5);
+    if (preview.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6);">No bookings for today.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = preview.map(booking => {
+      const patient = booking.patients || {};
+      const template = booking.opd_slot_templates || {};
+      const statusConf = AMH_CONFIG.BOOKING_STATUSES[booking.status] || {};
+
+      return `
+        <tr>
+          <td style="font-weight:700;color:var(--color-primary);">#${booking.slot_number}</td>
+          <td style="font-weight:600;">${sanitizeText(patient.full_name || '—')}</td>
+          <td style="font-family:monospace;font-size:var(--font-size-xs);color:var(--color-secondary);">
+            ${sanitizeText(patient.unique_patient_id || '—')}
+          </td>
+          <td style="color:var(--color-text-secondary);">
+            ${template.start_time ? formatTimeRange(template.start_time, template.end_time) : '—'}
+          </td>
+          <td><span class="badge ${statusConf.class || 'badge--pending'}">${sanitizeText(statusConf.label || booking.status)}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--color-danger);text-align:center;padding:var(--space-4);">${sanitizeText(err.message)}</td></tr>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initAdminDashboard);
+</script>
+</body>
+</html>

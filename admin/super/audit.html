@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log — AMH Super Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Super Admin</span>
+      <span class="navbar__brand-sub">Audit Log</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/super/admins.html" class="navbar__link">👥 Admins</a>
+    <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+    <a href="../../admin/super/audit.html" class="navbar__link navbar__link--active" aria-current="page">📋 Audit Log</a>
+    <a href="../../admin/super/reports.html" class="navbar__link">📊 Reports</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/super/admins.html" class="navbar__link">👥 Admins</a>
+  <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+  <a href="../../admin/super/audit.html" class="navbar__link navbar__link--active">📋 Audit Log</a>
+  <a href="../../admin/super/reports.html" class="navbar__link">📊 Reports</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1100px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">📋 Audit Log</h1>
+      <p class="page-header__subtitle">Complete record of admin actions in the system</p>
+    </div>
+    <button class="btn btn--ghost" id="export-btn" type="button">⬇ Export CSV</button>
+  </div>
+
+  <!-- Filters -->
+  <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-5);">
+    <input type="date" id="date-from" class="form-input" style="width:160px;" aria-label="From date">
+    <input type="date" id="date-to" class="form-input" style="width:160px;" aria-label="To date">
+    <select id="admin-filter" class="form-input" style="width:200px;" aria-label="Filter by admin">
+      <option value="">All Admins</option>
+    </select>
+    <select id="action-filter" class="form-input" style="width:200px;" aria-label="Filter by action">
+      <option value="">All Actions</option>
+      <option value="create">Create</option>
+      <option value="update">Update</option>
+      <option value="delete">Delete</option>
+      <option value="login">Login</option>
+      <option value="view">View</option>
+    </select>
+    <button class="btn btn--primary" id="filter-btn" type="button">Filter</button>
+  </div>
+
+  <!-- Summary Row -->
+  <div id="summary-row" style="display:none;padding:var(--space-3) var(--space-4);background:var(--color-bg-secondary);border-radius:var(--radius-md);margin-bottom:var(--space-4);font-size:var(--font-size-sm);color:var(--color-text-secondary);">
+    Showing <strong id="result-count">0</strong> entries
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table class="table" aria-label="Audit log entries">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Admin</th>
+          <th>Action</th>
+          <th>Table</th>
+          <th>Record ID</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="audit-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:var(--space-8);"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <div class="empty-state__icon">📋</div>
+    <div class="empty-state__title">No Audit Entries Found</div>
+    <div class="empty-state__text">No audit log entries match your filters.</div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="pagination" style="display:flex;justify-content:center;gap:var(--space-2);margin-top:var(--space-6);display:none;">
+    <button class="btn btn--ghost btn--sm" id="prev-page-btn" type="button" disabled>← Previous</button>
+    <span id="page-info" style="display:flex;align-items:center;font-size:var(--font-size-sm);color:var(--color-text-secondary);">Page 1</span>
+    <button class="btn btn--ghost btn--sm" id="next-page-btn" type="button">Next →</button>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let currentPage = 0;
+const PAGE_SIZE = 50;
+let totalCount = 0;
+let adminMap = {};
+
+async function initAuditPage() {
+  adminSession = await requireAdminAuth(['super_admin']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  await loadAdminList();
+
+  // Set default date range (last 7 days)
+  const today = new Date().toLocaleDateString('en-CA');
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+  document.getElementById('date-from').value = weekAgo;
+  document.getElementById('date-to').value = today;
+
+  document.getElementById('filter-btn').addEventListener('click', () => { currentPage = 0; loadAuditLog(); });
+  document.getElementById('prev-page-btn').addEventListener('click', () => { if (currentPage > 0) { currentPage--; loadAuditLog(); } });
+  document.getElementById('next-page-btn').addEventListener('click', () => { currentPage++; loadAuditLog(); });
+  document.getElementById('export-btn').addEventListener('click', exportCSV);
+
+  await loadAuditLog();
+}
+
+async function loadAdminList() {
+  try {
+    const db = getDB();
+    const { data } = await db.from('admin_users').select('id,full_name');
+    if (data) {
+      const select = document.getElementById('admin-filter');
+      data.forEach(a => {
+        adminMap[a.id] = a.full_name;
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.full_name;
+        select.appendChild(opt);
+      });
+    }
+  } catch {}
+}
+
+async function loadAuditLog() {
+  const dateFrom = document.getElementById('date-from').value;
+  const dateTo = document.getElementById('date-to').value;
+  const adminId = document.getElementById('admin-filter').value;
+  const actionFilter = document.getElementById('action-filter').value;
+
+  document.getElementById('audit-tbody').innerHTML = `
+    <tr><td colspan="6" style="text-align:center;padding:var(--space-8);"><div class="spinner"></div></td></tr>`;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('pagination').style.display = 'none';
+  document.getElementById('summary-row').style.display = 'none';
+
+  try {
+    const db = getDB();
+    let q = db.from('audit_logs').select('*', { count: 'exact' });
+
+    if (dateFrom) q = q.gte('created_at', dateFrom);
+    if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
+    if (adminId) q = q.eq('admin_id', adminId);
+    if (actionFilter) q = q.ilike('action', actionFilter + '%');
+
+    q = q.order('created_at', { ascending: false })
+         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
+
+    const { data, error, count } = await q;
+    if (error) throw new Error(error.message);
+
+    totalCount = count || 0;
+    const entries = data || [];
+
+    if (entries.length === 0) {
+      document.getElementById('audit-tbody').innerHTML = '';
+      document.getElementById('empty-state').style.display = '';
+      return;
+    }
+
+    document.getElementById('result-count').textContent = totalCount;
+    document.getElementById('summary-row').style.display = '';
+    renderAuditLog(entries);
+    updatePagination();
+  } catch (err) {
+    Toast.error('Load Failed', err.message);
+    document.getElementById('audit-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--color-danger-dark);">Failed to load audit log.</td></tr>`;
+  }
+}
+
+function renderAuditLog(entries) {
+  const tbody = document.getElementById('audit-tbody');
+  tbody.innerHTML = entries.map(entry => {
+    const adminName = adminMap[entry.admin_id] || 'Unknown';
+    const ts = entry.created_at ? new Date(entry.created_at).toLocaleString('en-GB', {
+      timeZone: 'Asia/Colombo', day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    }) : '—';
+
+    let detailStr = '';
+    if (entry.details) {
+      try {
+        const d = typeof entry.details === 'string' ? JSON.parse(entry.details) : entry.details;
+        detailStr = Object.entries(d).slice(0, 3).map(([k, v]) => `${k}: ${v}`).join(', ');
+      } catch {}
+    }
+
+    const actionClass = entry.action?.includes('delete') ? 'badge--danger' :
+                       entry.action?.includes('create') ? 'badge--active' :
+                       entry.action?.includes('login') ? 'badge--warning' : 'badge--info';
+
+    return `
+      <tr>
+        <td style="font-size:var(--font-size-xs);color:var(--color-text-muted);white-space:nowrap;">${ts}</td>
+        <td style="font-weight:500;">${DOMPurify.sanitize(adminName)}</td>
+        <td><span class="badge ${actionClass}" style="font-size:11px;">${DOMPurify.sanitize(entry.action || '—')}</span></td>
+        <td style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">${DOMPurify.sanitize(entry.table_name || '—')}</td>
+        <td style="font-family:monospace;font-size:11px;color:var(--color-text-muted);">${(entry.record_id || '—').substring(0, 12)}…</td>
+        <td style="font-size:var(--font-size-xs);color:var(--color-text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${DOMPurify.sanitize(detailStr)}">${DOMPurify.sanitize(detailStr)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updatePagination() {
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  if (totalPages <= 1) return;
+
+  document.getElementById('pagination').style.display = 'flex';
+  document.getElementById('page-info').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+  document.getElementById('prev-page-btn').disabled = currentPage === 0;
+  document.getElementById('next-page-btn').disabled = currentPage >= totalPages - 1;
+}
+
+async function exportCSV() {
+  const dateFrom = document.getElementById('date-from').value;
+  const dateTo = document.getElementById('date-to').value;
+  const adminId = document.getElementById('admin-filter').value;
+
+  Toast.info('Exporting', 'Preparing CSV export…');
+
+  try {
+    const db = getDB();
+    let q = db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(5000);
+    if (dateFrom) q = q.gte('created_at', dateFrom);
+    if (dateTo) q = q.lte('created_at', dateTo + 'T23:59:59');
+    if (adminId) q = q.eq('admin_id', adminId);
+
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+
+    const rows = (data || []).map(e => [
+      new Date(e.created_at).toLocaleString('en-GB', { timeZone: 'Asia/Colombo' }),
+      adminMap[e.admin_id] || e.admin_id,
+      e.action,
+      e.table_name,
+      e.record_id,
+      JSON.stringify(e.details || {}),
+    ]);
+
+    const csv = ['Timestamp,Admin,Action,Table,Record ID,Details', ...rows.map(r => r.map(v => `"${String(v || '').replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `amh-audit-log-${dateFrom || 'all'}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.success('Exported', 'Audit log exported to CSV.');
+  } catch (err) {
+    Toast.error('Export Failed', err.message);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initAuditPage);
+</script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Registration Kiosk — AMH Hospital</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/print.css">
+  <style>
+    /* Kiosk-specific: large touch targets */
+    .kiosk-body {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: var(--space-6) var(--space-4);
+    }
+    .kiosk-card {
+      width: 100%;
+      max-width: 680px;
+      background: #fff;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .kiosk-header {
+      background: var(--color-primary);
+      color: #fff;
+      text-align: center;
+      padding: var(--space-8) var(--space-6) var(--space-6);
+    }
+    .kiosk-header__logo { font-size: 52px; margin-bottom: var(--space-3); }
+    .kiosk-header__title { font-size: 28px; font-weight: 800; margin-bottom: var(--space-1); }
+    .kiosk-header__sub { font-size: var(--font-size-base); opacity: 0.85; }
+    .kiosk-form { padding: var(--space-8) var(--space-8); }
+    .kiosk-form .form-input {
+      font-size: 18px;
+      padding: var(--space-4) var(--space-4);
+      border-radius: var(--radius-lg);
+      min-height: 56px;
+    }
+    .kiosk-form .form-label { font-size: 15px; }
+    .kiosk-btn {
+      width: 100%;
+      height: 64px;
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: var(--radius-lg);
+    }
+    /* Success Screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: var(--space-10) var(--space-8);
+    }
+    .success-screen__icon { font-size: 64px; margin-bottom: var(--space-4); }
+    .success-screen__title { font-size: 28px; font-weight: 800; color: var(--color-success-dark); margin-bottom: var(--space-2); }
+    .success-screen__pid {
+      font-family: monospace;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--color-primary);
+      letter-spacing: 0.08em;
+      margin: var(--space-4) 0;
+      padding: var(--space-4);
+      background: var(--color-primary-tint);
+      border-radius: var(--radius-lg);
+      display: inline-block;
+    }
+    .qr-wrapper {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-5);
+      border: 3px solid var(--color-primary-tint);
+      border-radius: var(--radius-xl);
+      margin: var(--space-6) 0;
+    }
+    .countdown-bar {
+      height: 6px;
+      background: var(--color-bg-secondary);
+      border-radius: 3px;
+      margin-top: var(--space-5);
+      overflow: hidden;
+    }
+    .countdown-bar__fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: 3px;
+      transition: width 1s linear;
+    }
+    @media print {
+      .kiosk-body { background: #fff; padding: 0; }
+      .kiosk-card { box-shadow: none; }
+      .kiosk-header { background: var(--color-primary) !important; -webkit-print-color-adjust: exact; }
+      .no-print { display: none !important; }
+    }
+    @media (max-width: 600px) {
+      .kiosk-form { padding: var(--space-5) var(--space-4); }
+    }
+  </style>
+</head>
+<body class="kiosk-body">
+
+<div class="kiosk-card">
+  <!-- Header -->
+  <div class="kiosk-header">
+    <div class="kiosk-header__logo">🏥</div>
+    <div class="kiosk-header__title">AMH Kalmunai</div>
+    <div class="kiosk-header__sub">Patient Registration Kiosk</div>
+  </div>
+
+  <!-- Step 1: Registration Form -->
+  <div id="registration-form" class="kiosk-form">
+    <h2 style="text-align:center;font-size:20px;font-weight:700;margin-bottom:var(--space-6);color:var(--color-text-primary);">
+      New Patient Registration
+    </h2>
+
+    <form id="reg-form" novalidate autocomplete="off">
+      <div class="form-group">
+        <label class="form-label form-label--required" for="full-name">Full Name</label>
+        <input
+          type="text"
+          id="full-name"
+          class="form-input"
+          placeholder="Enter your full name"
+          maxlength="100"
+          aria-required="true"
+          autocomplete="name"
+        >
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label form-label--required" for="age">Age</label>
+          <input
+            type="number"
+            id="age"
+            class="form-input"
+            placeholder="Years"
+            min="0"
+            max="120"
+            aria-required="true"
+          >
+        </div>
+        <div class="form-group">
+          <label class="form-label form-label--required" for="gender">Gender</label>
+          <select id="gender" class="form-input" aria-required="true">
+            <option value="">Select…</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="nic-number">NIC Number</label>
+        <input
+          type="text"
+          id="nic-number"
+          class="form-input"
+          placeholder="e.g. 951234567V or 199512345678"
+          maxlength="12"
+          autocomplete="off"
+        >
+        <p class="form-hint">Optional but recommended for easy retrieval</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label form-label--required" for="phone-number">Phone Number</label>
+        <input
+          type="tel"
+          id="phone-number"
+          class="form-input"
+          placeholder="e.g. 0712345678"
+          maxlength="15"
+          aria-required="true"
+          autocomplete="tel"
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label form-label--required" for="address">Address</label>
+        <textarea
+          id="address"
+          class="form-input"
+          rows="2"
+          placeholder="Your full address"
+          maxlength="300"
+          aria-required="true"
+          style="font-size:16px;min-height:80px;"
+        ></textarea>
+      </div>
+
+      <!-- Guardian (shown when age < 18) -->
+      <div id="guardian-section" style="display:none;">
+        <div style="background:var(--color-warning-light,#fff8e1);border-radius:var(--radius-lg);padding:var(--space-4);margin-bottom:var(--space-4);">
+          <p style="font-size:14px;color:var(--color-warning-dark);font-weight:600;margin-bottom:var(--space-3);">👪 Minor patient — Guardian details required</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required" for="guardian-name">Guardian Name</label>
+              <input type="text" id="guardian-name" class="form-input" placeholder="Parent or guardian" maxlength="100">
+            </div>
+            <div class="form-group">
+              <label class="form-label form-label--required" for="guardian-phone">Guardian Phone</label>
+              <input type="tel" id="guardian-phone" class="form-input" placeholder="Guardian's number" maxlength="15">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Duplicate NIC warning -->
+      <div id="dup-warning" style="display:none;background:var(--color-warning-light,#fff8e1);border-radius:var(--radius-lg);padding:var(--space-4);margin-bottom:var(--space-4);">
+        <p style="font-size:14px;color:var(--color-warning-dark);font-weight:600;">⚠️ A patient with this NIC already exists. Please check at the reception desk.</p>
+        <div id="existing-patient-card" style="margin-top:var(--space-3);"></div>
+      </div>
+
+      <button class="btn btn--primary kiosk-btn" id="register-btn" type="button" aria-label="Register as new patient">
+        Register Patient →
+      </button>
+
+      <p style="text-align:center;margin-top:var(--space-4);font-size:13px;color:var(--color-text-muted);">
+        Already registered? Scan your QR card or visit the reception desk.
+      </p>
+    </form>
+  </div>
+
+  <!-- Step 2: Success Screen -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-screen__icon">✅</div>
+    <div class="success-screen__title">Registration Successful!</div>
+    <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4);">Your Patient ID is:</p>
+    <div class="success-screen__pid" id="success-pid"></div>
+
+    <!-- QR Code -->
+    <div class="qr-wrapper">
+      <div id="qr-code-container" style="width:200px;height:200px;"></div>
+      <p style="font-size:12px;color:var(--color-text-muted);margin-top:var(--space-3);">Show this QR at the reception desk</p>
+    </div>
+
+    <!-- Patient summary for print -->
+    <div style="text-align:left;background:var(--color-bg-secondary);border-radius:var(--radius-lg);padding:var(--space-4);margin-bottom:var(--space-5);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div><div style="font-size:12px;color:var(--color-text-muted);">Name</div><div id="print-name" style="font-weight:600;"></div></div>
+        <div><div style="font-size:12px;color:var(--color-text-muted);">Age / Gender</div><div id="print-age-gender" style="font-weight:600;"></div></div>
+        <div><div style="font-size:12px;color:var(--color-text-muted);">NIC</div><div id="print-nic" style="font-weight:600;font-family:monospace;"></div></div>
+        <div><div style="font-size:12px;color:var(--color-text-muted);">Phone</div><div id="print-phone" style="font-weight:600;"></div></div>
+        <div style="grid-column:1/-1;"><div style="font-size:12px;color:var(--color-text-muted);">Registered</div><div id="print-date" style="font-weight:600;"></div></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;flex-direction:column;gap:var(--space-3);" class="no-print">
+      <button class="btn btn--primary kiosk-btn" id="print-card-btn" type="button">🖨 Print Card</button>
+      <button class="btn btn--ghost kiosk-btn" id="register-another-btn" type="button">Register Another Patient</button>
+    </div>
+
+    <!-- Auto-reset countdown -->
+    <div class="no-print" style="margin-top:var(--space-6);">
+      <p style="font-size:13px;color:var(--color-text-muted);">Auto-reset in <span id="countdown-secs">30</span>s</p>
+      <div class="countdown-bar">
+        <div class="countdown-bar__fill" id="countdown-fill" style="width:100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading-overlay" style="display:none;text-align:center;padding:var(--space-10);">
+    <div class="spinner" style="width:48px;height:48px;border-width:5px;margin:0 auto var(--space-4);"></div>
+    <p style="font-size:18px;font-weight:600;color:var(--color-text-secondary);">Registering patient…</p>
+    <p style="font-size:13px;color:var(--color-text-muted);">Please wait…</p>
+  </div>
+</div>
+
+<p style="color:rgba(255,255,255,0.6);text-align:center;margin-top:var(--space-5);font-size:13px;" class="no-print">
+  Ashraff Hospital Kalmunai · Patient Self-Registration Kiosk
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+
+<script>
+'use strict';
+
+let countdownTimer = null;
+let countdownValue = 30;
+let nicCheckTimer = null;
+
+async function initKiosk() {
+  initSupabase();
+
+  // Guardian section toggle based on age
+  document.getElementById('age').addEventListener('input', function() {
+    const age = parseInt(this.value, 10);
+    const guardianSection = document.getElementById('guardian-section');
+    guardianSection.style.display = (!isNaN(age) && age < 18) ? '' : 'none';
+  });
+
+  // NIC duplicate check on blur
+  document.getElementById('nic-number').addEventListener('blur', checkNICDuplicate);
+
+  // Register button
+  document.getElementById('register-btn').addEventListener('click', handleRegister);
+  document.getElementById('print-card-btn').addEventListener('click', () => window.print());
+  document.getElementById('register-another-btn').addEventListener('click', resetKiosk);
+}
+
+let nicCheckDebounce = null;
+async function checkNICDuplicate() {
+  const nic = document.getElementById('nic-number').value.trim();
+  if (!nic || nic.length < 9) {
+    document.getElementById('dup-warning').style.display = 'none';
+    return;
+  }
+
+  try {
+    const db = getDB();
+    const { data } = await db
+      .from('patients')
+      .select('id,unique_patient_id,full_name,age,gender')
+      .eq('nic_number', nic.toUpperCase())
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (data) {
+      document.getElementById('dup-warning').style.display = '';
+      document.getElementById('existing-patient-card').innerHTML = `
+        <div style="background:#fff;border-radius:var(--radius-md);padding:var(--space-3);">
+          <div style="font-weight:600;">${DOMPurify.sanitize(data.full_name)}</div>
+          <div style="font-family:monospace;font-size:14px;color:var(--color-primary);">${DOMPurify.sanitize(data.unique_patient_id)}</div>
+          <div style="font-size:13px;color:var(--color-text-muted);">${data.age} yrs · ${DOMPurify.sanitize(data.gender || '')}</div>
+        </div>
+      `;
+    } else {
+      document.getElementById('dup-warning').style.display = 'none';
+    }
+  } catch {}
+}
+
+async function handleRegister() {
+  const fullName = document.getElementById('full-name').value.trim();
+  const age = document.getElementById('age').value;
+  const gender = document.getElementById('gender').value;
+  const nic = document.getElementById('nic-number').value.trim();
+  const phone = document.getElementById('phone-number').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const guardianName = document.getElementById('guardian-name').value.trim();
+  const guardianPhone = document.getElementById('guardian-phone').value.trim();
+
+  // Validation
+  const form = document.getElementById('reg-form');
+  clearAllFormErrors(form);
+  let hasErrors = false;
+
+  if (!fullName || fullName.length < 2) {
+    showFieldError(document.getElementById('full-name'), 'Full name is required');
+    hasErrors = true;
+  }
+  if (!age || parseInt(age, 10) < 0 || parseInt(age, 10) > 120) {
+    showFieldError(document.getElementById('age'), 'Please enter a valid age');
+    hasErrors = true;
+  }
+  if (!gender) {
+    showFieldError(document.getElementById('gender'), 'Gender is required');
+    hasErrors = true;
+  }
+  if (!phone || phone.length < 7) {
+    showFieldError(document.getElementById('phone-number'), 'Valid phone number is required');
+    hasErrors = true;
+  }
+  if (!address || address.length < 5) {
+    showFieldError(document.getElementById('address'), 'Please enter your address');
+    hasErrors = true;
+  }
+  const ageNum = parseInt(age, 10);
+  if (ageNum < 18) {
+    if (!guardianName) {
+      showFieldError(document.getElementById('guardian-name'), 'Guardian name is required for minors');
+      hasErrors = true;
+    }
+    if (!guardianPhone) {
+      showFieldError(document.getElementById('guardian-phone'), 'Guardian phone is required for minors');
+      hasErrors = true;
+    }
+  }
+
+  if (hasErrors) return;
+
+  // Show loading
+  document.getElementById('registration-form').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = '';
+
+  try {
+    const patientData = {
+      full_name: fullName,
+      age: ageNum,
+      gender,
+      nic_number: nic ? nic.toUpperCase() : null,
+      phone_number: phone,
+      address,
+      guardian_name: guardianName || null,
+      guardian_phone: guardianPhone || null,
+    };
+
+    const { data, error } = await registerPatient(patientData);
+
+    if (error) {
+      throw new Error(error);
+    }
+
+    showSuccessScreen(data, patientData);
+  } catch (err) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('registration-form').style.display = '';
+    showKioskError(err.message);
+  }
+}
+
+function showKioskError(message) {
+  Toast.error('Registration Failed', message || 'Something went wrong. Please try again or visit the reception desk.');
+}
+
+function showSuccessScreen(patient, formData) {
+  document.getElementById('loading-overlay').style.display = 'none';
+
+  // Populate success screen
+  document.getElementById('success-pid').textContent = patient.unique_patient_id;
+  document.getElementById('print-name').textContent = formData.full_name;
+  document.getElementById('print-age-gender').textContent = formData.age + ' years · ' + formData.gender;
+  document.getElementById('print-nic').textContent = patient.nic_number || 'Not provided';
+  document.getElementById('print-phone').textContent = formData.phone_number;
+  document.getElementById('print-date').textContent = new Date().toLocaleString('en-GB', {
+    timeZone: 'Asia/Colombo', day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  document.getElementById('success-screen').style.display = '';
+
+  // Generate QR code
+  const qrContainer = document.getElementById('qr-code-container');
+  qrContainer.innerHTML = '';
+  if (window.QRCode) {
+    new QRCode(qrContainer, {
+      text: patient.unique_patient_id,
+      width: 200,
+      height: 200,
+      colorDark: '#1A3C6E',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+  }
+
+  // Start auto-reset countdown
+  startCountdown();
+}
+
+function startCountdown() {
+  countdownValue = 30;
+  document.getElementById('countdown-secs').textContent = countdownValue;
+  document.getElementById('countdown-fill').style.width = '100%';
+
+  countdownTimer = setInterval(() => {
+    countdownValue--;
+    document.getElementById('countdown-secs').textContent = countdownValue;
+    const pct = Math.round((countdownValue / 30) * 100);
+    document.getElementById('countdown-fill').style.width = pct + '%';
+
+    if (countdownValue <= 0) {
+      clearInterval(countdownTimer);
+      resetKiosk();
+    }
+  }, 1000);
+}
+
+function resetKiosk() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  // Reset form
+  document.getElementById('reg-form').reset();
+  document.getElementById('guardian-section').style.display = 'none';
+  document.getElementById('dup-warning').style.display = 'none';
+  const form = document.getElementById('reg-form');
+  clearAllFormErrors(form);
+
+  // Clear QR
+  document.getElementById('qr-code-container').innerHTML = '';
+
+  // Show form, hide others
+  document.getElementById('success-screen').style.display = 'none';
+  document.getElementById('loading-overlay').style.display = 'none';
+  document.getElementById('registration-form').style.display = '';
+
+  // Focus first field
+  document.getElementById('full-name').focus();
+}
+
+document.addEventListener('DOMContentLoaded', initKiosk);
+</script>
+</body>
+</html>

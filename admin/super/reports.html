@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — AMH Super Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Super Admin</span>
+      <span class="navbar__brand-sub">Reports</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/super/admins.html" class="navbar__link">👥 Admins</a>
+    <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+    <a href="../../admin/super/audit.html" class="navbar__link">📋 Audit Log</a>
+    <a href="../../admin/super/reports.html" class="navbar__link navbar__link--active" aria-current="page">📊 Reports</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/super/admins.html" class="navbar__link">👥 Admins</a>
+  <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+  <a href="../../admin/super/audit.html" class="navbar__link">📋 Audit Log</a>
+  <a href="../../admin/super/reports.html" class="navbar__link navbar__link--active">📊 Reports</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1100px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">📊 Reports</h1>
+      <p class="page-header__subtitle">Hospital statistics and booking analytics</p>
+    </div>
+    <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;">
+      <input type="date" id="report-date-from" class="form-input" style="width:160px;" aria-label="From date">
+      <input type="date" id="report-date-to" class="form-input" style="width:160px;" aria-label="To date">
+      <button class="btn btn--primary" id="load-report-btn" type="button">📊 Load Report</button>
+      <button class="btn btn--ghost" id="export-csv-btn" type="button">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Key Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:var(--space-6);">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Patients</div>
+      <div class="stat-card__value" id="stat-patients">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">OPD Bookings</div>
+      <div class="stat-card__value" id="stat-opd">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Clinic Bookings</div>
+      <div class="stat-card__value" id="stat-clinic">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Completed (Seen)</div>
+      <div class="stat-card__value" id="stat-seen" style="color:var(--color-success-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Cancelled</div>
+      <div class="stat-card__value" id="stat-cancelled" style="color:var(--color-danger-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">No Show</div>
+      <div class="stat-card__value" id="stat-noshow" style="color:var(--color-warning-dark);">—</div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-6);">
+    <!-- OPD Bookings by Day -->
+    <div class="card">
+      <div class="card__body">
+        <h3 style="font-weight:600;margin-bottom:var(--space-4);">📋 OPD Bookings by Day</h3>
+        <div id="opd-by-day-loading" style="text-align:center;padding:var(--space-6);">
+          <div class="spinner"></div>
+        </div>
+        <div id="opd-by-day" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Top Clinics -->
+    <div class="card">
+      <div class="card__body">
+        <h3 style="font-weight:600;margin-bottom:var(--space-4);">🏥 Top Clinics</h3>
+        <div id="clinic-stats-loading" style="text-align:center;padding:var(--space-6);">
+          <div class="spinner"></div>
+        </div>
+        <div id="clinic-stats" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Report Table -->
+  <div class="card">
+    <div class="card__body">
+      <div class="flex-between" style="margin-bottom:var(--space-4);">
+        <h3 style="font-weight:600;">📅 Daily Summary</h3>
+        <div style="display:flex;gap:var(--space-2);">
+          <button class="btn btn--ghost btn--sm" id="toggle-opd-btn" data-active="true" type="button">OPD</button>
+          <button class="btn btn--ghost btn--sm" id="toggle-clinic-btn" data-active="true" type="button">Clinic</button>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="table" aria-label="Daily booking summary">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>OPD Bookings</th>
+              <th>OPD Seen</th>
+              <th>Clinic Bookings</th>
+              <th>Clinic Seen</th>
+              <th>Total</th>
+              <th>Seen Rate</th>
+            </tr>
+          </thead>
+          <tbody id="daily-tbody">
+            <tr><td colspan="7" style="text-align:center;padding:var(--space-6);">
+              Select a date range and click "Load Report"
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let reportData = null;
+
+async function initReports() {
+  adminSession = await requireAdminAuth(['super_admin']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  // Default: current month
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-CA');
+  const today = now.toLocaleDateString('en-CA');
+  document.getElementById('report-date-from').value = firstDay;
+  document.getElementById('report-date-to').value = today;
+
+  document.getElementById('load-report-btn').addEventListener('click', loadReport);
+  document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+  await loadReport();
+}
+
+async function loadReport() {
+  const dateFrom = document.getElementById('report-date-from').value;
+  const dateTo = document.getElementById('report-date-to').value;
+
+  if (!dateFrom || !dateTo) { Toast.warning('Filters', 'Please select a date range.'); return; }
+
+  document.getElementById('opd-by-day-loading').style.display = '';
+  document.getElementById('opd-by-day').style.display = 'none';
+  document.getElementById('clinic-stats-loading').style.display = '';
+  document.getElementById('clinic-stats').style.display = 'none';
+  document.getElementById('daily-tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:var(--space-6);"><div class="spinner"></div></td></tr>`;
+
+  try {
+    const db = getDB();
+
+    const [patientsResult, opdResult, clinicResult] = await Promise.all([
+      db.from('patients').select('id', { count: 'exact' }).eq('is_active', true),
+      db.from('opd_bookings').select('booking_date,status', { count: 'exact' }).gte('booking_date', dateFrom).lte('booking_date', dateTo),
+      db.from('clinic_bookings').select('booking_date,status,clinic_schedules(clinic_name)', { count: 'exact' }).gte('booking_date', dateFrom).lte('booking_date', dateTo),
+    ]);
+
+    const opdBookings = opdResult.data || [];
+    const clinicBookings = clinicResult.data || [];
+
+    // Update key stats
+    document.getElementById('stat-patients').textContent = (patientsResult.count || 0).toLocaleString();
+    document.getElementById('stat-opd').textContent = opdBookings.length.toLocaleString();
+    document.getElementById('stat-clinic').textContent = clinicBookings.length.toLocaleString();
+    document.getElementById('stat-seen').textContent = [...opdBookings, ...clinicBookings].filter(b => b.status === 'seen').length.toLocaleString();
+    document.getElementById('stat-cancelled').textContent = [...opdBookings, ...clinicBookings].filter(b => b.status === 'cancelled').length.toLocaleString();
+    document.getElementById('stat-noshow').textContent = [...opdBookings, ...clinicBookings].filter(b => b.status === 'no_show').length.toLocaleString();
+
+    reportData = { opdBookings, clinicBookings, dateFrom, dateTo };
+
+    renderOPDByDay(opdBookings);
+    renderClinicStats(clinicBookings);
+    renderDailySummary(opdBookings, clinicBookings, dateFrom, dateTo);
+  } catch (err) {
+    Toast.error('Report Failed', err.message);
+  }
+}
+
+function renderOPDByDay(bookings) {
+  document.getElementById('opd-by-day-loading').style.display = 'none';
+  const container = document.getElementById('opd-by-day');
+
+  const byDay = {};
+  bookings.forEach(b => {
+    if (!byDay[b.booking_date]) byDay[b.booking_date] = 0;
+    byDay[b.booking_date]++;
+  });
+
+  const sorted = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a)).slice(0, 10);
+  const maxVal = Math.max(...sorted.map(([, v]) => v), 1);
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">No OPD bookings in this period.</p>';
+    container.style.display = '';
+    return;
+  }
+
+  container.innerHTML = sorted.map(([date, count]) => {
+    const pct = Math.round((count / maxVal) * 100);
+    const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    return `
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2);">
+        <div style="width:60px;font-size:var(--font-size-xs);color:var(--color-text-muted);text-align:right;">${dateLabel}</div>
+        <div style="flex:1;height:20px;background:var(--color-bg-secondary);border-radius:var(--radius-sm);overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:var(--color-primary);border-radius:var(--radius-sm);transition:width 0.3s;"></div>
+        </div>
+        <div style="width:32px;font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-primary);">${count}</div>
+      </div>
+    `;
+  }).join('');
+  container.style.display = '';
+}
+
+function renderClinicStats(bookings) {
+  document.getElementById('clinic-stats-loading').style.display = 'none';
+  const container = document.getElementById('clinic-stats');
+
+  const byClinic = {};
+  bookings.forEach(b => {
+    const name = (b.clinic_schedules && b.clinic_schedules.clinic_name) || 'Unknown';
+    if (!byClinic[name]) byClinic[name] = 0;
+    byClinic[name]++;
+  });
+
+  const sorted = Object.entries(byClinic).sort(([, a], [, b]) => b - a).slice(0, 8);
+  const maxVal = Math.max(...sorted.map(([, v]) => v), 1);
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">No clinic bookings in this period.</p>';
+    container.style.display = '';
+    return;
+  }
+
+  container.innerHTML = sorted.map(([clinic, count]) => {
+    const pct = Math.round((count / maxVal) * 100);
+    return `
+      <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-2);">
+        <div style="flex:1;font-size:var(--font-size-sm);color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${DOMPurify.sanitize(clinic)}">${DOMPurify.sanitize(clinic)}</div>
+        <div style="width:100px;height:20px;background:var(--color-bg-secondary);border-radius:var(--radius-sm);overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:var(--color-accent);border-radius:var(--radius-sm);"></div>
+        </div>
+        <div style="width:32px;font-size:var(--font-size-sm);font-weight:600;">${count}</div>
+      </div>
+    `;
+  }).join('');
+  container.style.display = '';
+}
+
+function renderDailySummary(opdBookings, clinicBookings, dateFrom, dateTo) {
+  // Build date range
+  const dates = [];
+  let cur = new Date(dateFrom + 'T00:00:00');
+  const end = new Date(dateTo + 'T00:00:00');
+  while (cur <= end) {
+    dates.push(cur.toLocaleDateString('en-CA'));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  const opdByDate = {};
+  opdBookings.forEach(b => {
+    if (!opdByDate[b.booking_date]) opdByDate[b.booking_date] = { total: 0, seen: 0 };
+    opdByDate[b.booking_date].total++;
+    if (b.status === 'seen') opdByDate[b.booking_date].seen++;
+  });
+
+  const clinicByDate = {};
+  clinicBookings.forEach(b => {
+    if (!clinicByDate[b.booking_date]) clinicByDate[b.booking_date] = { total: 0, seen: 0 };
+    clinicByDate[b.booking_date].total++;
+    if (b.status === 'seen') clinicByDate[b.booking_date].seen++;
+  });
+
+  const rows = dates.reverse().map(date => {
+    const opd = opdByDate[date] || { total: 0, seen: 0 };
+    const clinic = clinicByDate[date] || { total: 0, seen: 0 };
+    const total = opd.total + clinic.total;
+    const totalSeen = opd.seen + clinic.seen;
+    const seenRate = total > 0 ? Math.round((totalSeen / total) * 100) : 0;
+    const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' });
+
+    if (total === 0) return null;
+
+    return `
+      <tr>
+        <td style="font-weight:500;">${dateLabel}</td>
+        <td>${opd.total}</td>
+        <td style="color:var(--color-success-dark);">${opd.seen}</td>
+        <td>${clinic.total}</td>
+        <td style="color:var(--color-success-dark);">${clinic.seen}</td>
+        <td style="font-weight:600;">${total}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:var(--space-2);">
+            <div style="flex:1;height:8px;background:var(--color-bg-secondary);border-radius:4px;overflow:hidden;">
+              <div style="width:${seenRate}%;height:100%;background:${seenRate >= 70 ? 'var(--color-success)' : seenRate >= 40 ? 'var(--color-warning)' : 'var(--color-danger)'};"></div>
+            </div>
+            <span style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${seenRate}%</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).filter(Boolean);
+
+  const tbody = document.getElementById('daily-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-text-muted);">No data for selected range.</td></tr>`;
+  } else {
+    tbody.innerHTML = rows.join('');
+  }
+}
+
+function exportCSV() {
+  if (!reportData) { Toast.warning('No Data', 'Please load a report first.'); return; }
+
+  const { opdBookings, clinicBookings, dateFrom, dateTo } = reportData;
+  const all = [
+    ...opdBookings.map(b => ({ type: 'OPD', date: b.booking_date, status: b.status })),
+    ...clinicBookings.map(b => ({ type: 'Clinic', date: b.booking_date, status: b.status, clinic: b.clinic_schedules?.clinic_name || '' })),
+  ];
+
+  const csv = ['Type,Date,Status,Clinic', ...all.map(r => `"${r.type}","${r.date}","${r.status}","${r.clinic || ''}"`)].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `amh-report-${dateFrom}-to-${dateTo}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  Toast.success('Exported', 'Report exported to CSV.');
+}
+
+document.addEventListener('DOMContentLoaded', initReports);
+</script>
+</body>
+</html>

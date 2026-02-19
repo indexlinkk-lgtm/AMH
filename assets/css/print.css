@@ -1,0 +1,506 @@
+/**
+ * print.css — Print Styles for Patient Card
+ * Ashraff Hospital Kalmunai — AMH Patient Management System
+ * Optimized for A6 thermal/A4 print layout
+ * Triggered by window.print() from patient dashboard
+ */
+
+@media print {
+  /* ============================================================
+     RESET FOR PRINT
+     ============================================================ */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide everything except the print target */
+  body * {
+    visibility: hidden;
+  }
+
+  /* ============================================================
+     PRINT TARGET — only the patient card prints
+     ============================================================ */
+  #print-target,
+  #print-target * {
+    visibility: visible;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* ============================================================
+     HIDE NON-PRINT ELEMENTS
+     ============================================================ */
+  .navbar,
+  .navbar__mobile-nav,
+  .toast-container,
+  .modal-backdrop,
+  .btn,
+  .patient-card__actions,
+  .page-main > *:not(#print-target-wrapper),
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* ============================================================
+     PRINT CONTAINER
+     ============================================================ */
+  #print-target-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    z-index: 99999;
+  }
+
+  #print-target {
+    position: relative;
+    visibility: visible;
+    width: 148mm;      /* A6 width */
+    height: auto;
+    min-height: 105mm; /* A6 height */
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  /* ============================================================
+     PAGE SETUP (A6 — 148mm x 105mm)
+     ============================================================ */
+  @page {
+    size: A6 landscape;
+    margin: 6mm;
+  }
+
+  /* ============================================================
+     PATIENT CARD PRINT LAYOUT
+     ============================================================ */
+  .patient-card--print {
+    width: 100%;
+    background: white !important;
+    border: 1.5pt solid #1A3C6E !important;
+    border-radius: 4mm !important;
+    overflow: hidden;
+    font-family: 'Inter', Arial, sans-serif;
+    position: relative;
+  }
+
+  /* Watermark visible on print */
+  .patient-card--print::before {
+    content: 'ASHRAFF HOSPITAL KALMUNAI';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 10pt;
+    font-weight: bold;
+    color: rgba(26, 60, 110, 0.07) !important;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+    width: 200%;
+    text-align: center;
+  }
+
+  /* ============================================================
+     CARD HEADER (print)
+     ============================================================ */
+  .patient-card__header--print {
+    background: #1A3C6E !important;
+    padding: 3mm 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+  }
+
+  .patient-card__hospital-info--print {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+  }
+
+  .patient-card__logo--print {
+    width: 10mm;
+    height: 10mm;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 1.5mm;
+    padding: 1mm;
+    object-fit: contain;
+  }
+
+  .patient-card__hospital-name--print {
+    font-size: 8pt;
+    font-weight: bold;
+    color: white !important;
+    line-height: 1.3;
+  }
+
+  .patient-card__hospital-sub--print {
+    font-size: 6.5pt;
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  .patient-card__badge--print {
+    font-size: 6pt;
+    font-weight: bold;
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    padding: 1mm 2.5mm;
+    border-radius: 10mm;
+    letter-spacing: 0.5px;
+  }
+
+  /* ============================================================
+     CARD BODY (print)
+     ============================================================ */
+  .patient-card__body--print {
+    padding: 4mm 5mm;
+    display: flex;
+    gap: 4mm;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+  }
+
+  .patient-card__info--print {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .patient-card__id--print {
+    font-size: 6pt;
+    font-weight: 600;
+    color: #0EA5A0 !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 1mm;
+  }
+
+  .patient-card__name--print {
+    font-size: 13pt;
+    font-weight: 800;
+    color: #1A3C6E !important;
+    margin-bottom: 3mm;
+    line-height: 1.2;
+  }
+
+  .patient-card__details--print {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5mm;
+  }
+
+  .patient-card__detail-row--print {
+    display: flex;
+    gap: 2mm;
+    font-size: 7pt;
+    align-items: flex-start;
+  }
+
+  .patient-card__detail-label--print {
+    color: #94A3B8 !important;
+    font-weight: 500;
+    min-width: 18mm;
+    flex-shrink: 0;
+  }
+
+  .patient-card__detail-value--print {
+    color: #1E293B !important;
+    font-weight: 600;
+  }
+
+  /* ============================================================
+     QR CODE (print)
+     ============================================================ */
+  .patient-card__qr--print {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5mm;
+  }
+
+  .patient-card__qr-box--print {
+    width: 28mm;
+    height: 28mm;
+    background: white !important;
+    border: 1pt solid #E2E8F0 !important;
+    border-radius: 1.5mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 1mm;
+  }
+
+  .patient-card__qr-box--print canvas,
+  .patient-card__qr-box--print img {
+    width: 100% !important;
+    height: 100% !important;
+    image-rendering: pixelated;
+  }
+
+  .patient-card__qr-label--print {
+    font-size: 5.5pt;
+    font-weight: 600;
+    color: #94A3B8 !important;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  /* ============================================================
+     CARD DIVIDER LINE
+     ============================================================ */
+  .patient-card__divider--print {
+    height: 0.5pt;
+    background: #E2E8F0 !important;
+    margin: 0 5mm;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============================================================
+     CARD FOOTER (print)
+     ============================================================ */
+  .patient-card__footer--print {
+    padding: 2.5mm 5mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #1A3C6E, #0EA5A0) !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .patient-card__footer-text--print {
+    font-size: 6pt;
+    color: rgba(255, 255, 255, 0.75) !important;
+  }
+
+  .patient-card__footer-id--print {
+    font-size: 6.5pt;
+    font-weight: bold;
+    color: white !important;
+    letter-spacing: 1px;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ============================================================
+     VALIDITY STRIP (print)
+     ============================================================ */
+  .patient-card__validity--print {
+    font-size: 5.5pt;
+    color: rgba(255, 255, 255, 0.65) !important;
+    text-align: right;
+  }
+
+  /* ============================================================
+     PRESCRIPTION PRINT LAYOUT
+     ============================================================ */
+  .prescription--print {
+    width: 100%;
+    font-family: 'Inter', Arial, sans-serif;
+    padding: 10mm;
+    background: white !important;
+    color: #1E293B !important;
+  }
+
+  .prescription--print .rx-header {
+    border-bottom: 2pt solid #1A3C6E;
+    padding-bottom: 4mm;
+    margin-bottom: 5mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .prescription--print .rx-hospital-name {
+    font-size: 12pt;
+    font-weight: 800;
+    color: #1A3C6E !important;
+  }
+
+  .prescription--print .rx-hospital-sub {
+    font-size: 7pt;
+    color: #64748B !important;
+  }
+
+  .prescription--print .rx-symbol {
+    font-size: 40pt;
+    font-weight: 800;
+    color: #1A3C6E !important;
+    line-height: 1;
+  }
+
+  .prescription--print .rx-patient-section {
+    display: flex;
+    gap: 10mm;
+    margin-bottom: 5mm;
+    font-size: 8pt;
+  }
+
+  .prescription--print .rx-patient-field {
+    flex: 1;
+    border-bottom: 0.5pt solid #CBD5E1;
+    padding-bottom: 1mm;
+  }
+
+  .prescription--print .rx-patient-label {
+    color: #94A3B8 !important;
+    font-size: 6pt;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .prescription--print .rx-patient-value {
+    color: #1E293B !important;
+    font-weight: 600;
+    margin-top: 0.5mm;
+  }
+
+  .prescription--print .rx-medicines-title {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #1A3C6E !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3mm;
+    border-left: 2pt solid #0EA5A0;
+    padding-left: 2mm;
+  }
+
+  .prescription--print .rx-medicine-item {
+    margin-bottom: 3mm;
+    padding-bottom: 2mm;
+    border-bottom: 0.5pt dotted #E2E8F0;
+  }
+
+  .prescription--print .rx-medicine-name {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #1E293B !important;
+  }
+
+  .prescription--print .rx-medicine-dosage {
+    font-size: 7.5pt;
+    color: #64748B !important;
+    margin-top: 0.5mm;
+  }
+
+  .prescription--print .rx-medicine-duration {
+    font-size: 7pt;
+    color: #94A3B8 !important;
+  }
+
+  .prescription--print .rx-footer {
+    margin-top: 8mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-top: 0.5pt solid #E2E8F0;
+    padding-top: 3mm;
+  }
+
+  .prescription--print .rx-signature-line {
+    width: 40mm;
+    border-top: 1pt solid #1E293B;
+    padding-top: 1.5mm;
+    font-size: 7pt;
+    color: #64748B !important;
+    text-align: center;
+  }
+
+  .prescription--print .rx-valid-until {
+    font-size: 7pt;
+    color: #EF4444 !important;
+    font-weight: 600;
+  }
+
+  .prescription--print .rx-reg-number {
+    font-size: 6.5pt;
+    color: #94A3B8 !important;
+  }
+
+  /* ============================================================
+     PAGE BREAK HELPERS
+     ============================================================ */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* ============================================================
+     LINK / DECORATION REMOVAL IN PRINT
+     ============================================================ */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+/* ============================================================
+   PRINT PREVIEW (Screen simulation of print card)
+   Used by html2canvas for PNG download
+   ============================================================ */
+.patient-card--print-preview {
+  width: 520px;
+  background: white;
+  border: 2px solid #1A3C6E;
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: 'Inter', Arial, sans-serif;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(26, 60, 110, 0.2);
+}
+
+.patient-card--print-preview::before {
+  content: 'ASHRAFF HOSPITAL KALMUNAI';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  font-size: 14px;
+  font-weight: bold;
+  color: rgba(26, 60, 110, 0.05);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 0;
+  width: 200%;
+  text-align: center;
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login — AMH Hospital System</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<main class="landing-bg" role="main">
+  <div class="landing-card" style="max-width: 440px;">
+    <!-- Header -->
+    <div class="landing-card__header" style="background: linear-gradient(135deg, #102850, #1A3C6E);">
+      <div class="landing-card__logo" aria-hidden="true">🔐</div>
+      <h1 class="landing-card__hospital-name">Ashraff Hospital</h1>
+      <p class="landing-card__system-name">Staff / Admin Portal</p>
+    </div>
+
+    <!-- Body -->
+    <div class="landing-card__body">
+      <div
+        id="admin-login-error"
+        class="alert alert--danger"
+        style="display:none; margin-bottom: var(--space-5);"
+        role="alert"
+      >
+        <span class="alert__icon">❌</span>
+        <div class="alert__content">
+          <div id="admin-error-text">Invalid credentials.</div>
+        </div>
+      </div>
+
+      <form id="admin-login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label form-label--required" for="admin-email">Email Address</label>
+          <input
+            type="email"
+            id="admin-email"
+            name="email"
+            class="form-input"
+            placeholder="admin@ashraff.lk"
+            autocomplete="email"
+            aria-required="true"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label--required" for="admin-password">Password</label>
+          <div style="position:relative;">
+            <input
+              type="password"
+              id="admin-password"
+              name="password"
+              class="form-input"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              aria-required="true"
+              style="padding-right: var(--space-12);"
+            >
+            <button
+              type="button"
+              id="toggle-password"
+              aria-label="Toggle password visibility"
+              style="position:absolute;right:var(--space-3);top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--color-text-muted);padding:var(--space-2);"
+            >👁</button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn--primary btn--full btn--lg"
+          style="margin-top: var(--space-2);"
+        >
+          Sign In to Admin Portal
+        </button>
+      </form>
+
+      <div style="margin-top: var(--space-6); text-align: center;">
+        <a href="../index.html" style="font-size:var(--font-size-sm); color:var(--color-text-muted);">
+          ← Back to Patient Portal
+        </a>
+      </div>
+    </div>
+
+    <div style="padding: var(--space-4) var(--space-8); text-align:center; border-top:1px solid var(--color-border); background:var(--color-bg);">
+      <p style="font-size:var(--font-size-xs); color:var(--color-text-muted);">
+        Authorized staff only. All access is logged and monitored.
+      </p>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/audit.js"></script>
+<script src="../assets/js/admin-auth.js"></script>
+
+<script>
+  // Password visibility toggle
+  const toggleBtn = document.getElementById('toggle-password');
+  const passwordInput = document.getElementById('admin-password');
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.textContent = isPassword ? '🙈' : '👁';
+      toggleBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    });
+  }
+</script>
+</body>
+</html>

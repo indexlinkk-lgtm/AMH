@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic Schedules — AMH Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Admin</span>
+      <span class="navbar__brand-sub">Clinic Schedules</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/clinic/bookings.html" class="navbar__link">🏥 Clinic Queue</a>
+    <a href="../../admin/clinic/schedules.html" class="navbar__link navbar__link--active" aria-current="page">📅 Schedules</a>
+    <a href="../../admin/patients/verify.html" class="navbar__link">🔍 Verify Patient</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/clinic/bookings.html" class="navbar__link">🏥 Clinic Queue</a>
+  <a href="../../admin/clinic/schedules.html" class="navbar__link navbar__link--active">📅 Schedules</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1000px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">📅 Clinic Schedules</h1>
+      <p class="page-header__subtitle">Manage specialist clinic sessions and doctor schedules</p>
+    </div>
+    <button class="btn btn--primary" id="add-schedule-btn" type="button">+ Add Schedule</button>
+  </div>
+
+  <!-- Day Tabs -->
+  <div class="tabs">
+    <div class="tabs__nav tabs__nav--7day" role="tablist" aria-label="Day of week" id="day-tabs">
+      <button class="tabs__tab" data-dow="0" role="tab" type="button">Sun</button>
+      <button class="tabs__tab" data-dow="1" role="tab" type="button">Mon</button>
+      <button class="tabs__tab" data-dow="2" role="tab" type="button">Tue</button>
+      <button class="tabs__tab" data-dow="3" role="tab" type="button">Wed</button>
+      <button class="tabs__tab" data-dow="4" role="tab" type="button">Thu</button>
+      <button class="tabs__tab" data-dow="5" role="tab" type="button">Fri</button>
+      <button class="tabs__tab" data-dow="6" role="tab" type="button">Sat</button>
+    </div>
+    <div class="tabs__content">
+      <div id="schedules-list" style="display:flex;flex-direction:column;gap:var(--space-3);" aria-live="polite">
+        <div class="skeleton skeleton--card"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add/Edit Schedule Modal -->
+<div class="modal-backdrop" id="schedule-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="schedule-modal-title">
+  <div class="modal">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="schedule-modal-title">Add Clinic Schedule</div>
+        <div class="modal__subtitle" id="schedule-modal-subtitle">New specialist clinic session</div>
+      </div>
+      <button class="modal__close" id="schedule-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body">
+      <form id="schedule-form" novalidate>
+        <input type="hidden" id="schedule-edit-id">
+        <input type="hidden" id="schedule-edit-dow">
+
+        <div class="form-group">
+          <label class="form-label form-label--required" for="clinic-name">Clinic Name</label>
+          <input type="text" id="clinic-name" class="form-input" placeholder="e.g. Cardiology, Pediatrics" maxlength="100" aria-required="true">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label--required" for="doctor-name">Doctor Name</label>
+          <input type="text" id="doctor-name" class="form-input" placeholder="e.g. Dr. Ahmed Farook" maxlength="100" aria-required="true">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label form-label--required" for="sched-start-time">Start Time</label>
+            <input type="time" id="sched-start-time" class="form-input" aria-required="true">
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required" for="sched-end-time">End Time</label>
+            <input type="time" id="sched-end-time" class="form-input" aria-required="true">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label--required" for="sched-max-slots">Maximum Slots</label>
+          <input type="number" id="sched-max-slots" class="form-input" placeholder="e.g. 20" min="1" max="500" aria-required="true">
+          <p class="form-hint">Number of patients that can book this clinic session</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sched-room">Room / Location</label>
+          <input type="text" id="sched-room" class="form-input" placeholder="e.g. Room 3, Block B" maxlength="100">
+        </div>
+      </form>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="schedule-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="schedule-modal-save" type="button">Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" id="delete-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+  <div class="modal modal--sm modal--confirm" data-confirm-only="true">
+    <div class="modal__header">
+      <div><div class="modal__title" id="delete-modal-title" style="color:var(--color-danger-dark);">Delete Schedule</div></div>
+    </div>
+    <div class="modal__body">
+      <p style="color:var(--color-text-secondary);" id="delete-modal-msg">
+        Are you sure? This will deactivate this clinic schedule. Existing bookings will remain.
+      </p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="delete-modal-cancel" type="button">Keep Schedule</button>
+      <button class="btn btn--danger" id="delete-modal-confirm" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let currentDow = new Date().getDay();
+let allSchedules = [];
+let pendingDeleteId = null;
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+async function initClinicSchedules() {
+  adminSession = await requireAdminAuth(['clinic']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  activateTab(currentDow);
+
+  document.querySelectorAll('[data-dow]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      currentDow = parseInt(tab.dataset.dow, 10);
+      activateTab(currentDow);
+      renderSchedules();
+    });
+  });
+
+  document.getElementById('add-schedule-btn').addEventListener('click', openAddModal);
+  document.getElementById('schedule-modal-close').addEventListener('click', () => closeModal('schedule-modal'));
+  document.getElementById('schedule-modal-cancel').addEventListener('click', () => closeModal('schedule-modal'));
+  document.getElementById('schedule-modal-save').addEventListener('click', saveSchedule);
+  document.getElementById('delete-modal-cancel').addEventListener('click', () => closeModal('delete-modal'));
+  document.getElementById('delete-modal-confirm').addEventListener('click', confirmDelete);
+
+  await loadSchedules();
+}
+
+function activateTab(dow) {
+  document.querySelectorAll('[data-dow]').forEach(tab => {
+    const isActive = parseInt(tab.dataset.dow, 10) === dow;
+    tab.classList.toggle('tabs__tab--active', isActive);
+    tab.setAttribute('aria-selected', isActive);
+  });
+}
+
+async function loadSchedules() {
+  try {
+    const db = getDB();
+    const { data, error } = await db
+      .from('clinic_schedules')
+      .select('*')
+      .order('start_time', { ascending: true });
+    if (error) throw new Error(error.message);
+    allSchedules = data || [];
+    renderSchedules();
+  } catch (err) {
+    Toast.error('Load Failed', err.message);
+  }
+}
+
+function renderSchedules() {
+  const container = document.getElementById('schedules-list');
+  const daySchedules = allSchedules.filter(s => s.day_of_week === currentDow);
+
+  if (daySchedules.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">📅</div>
+        <div class="empty-state__title">No Clinics for ${DAY_NAMES[currentDow]}</div>
+        <div class="empty-state__text">No clinic sessions configured for this day. Click "+ Add Schedule" to create one.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = daySchedules.map(s => `
+    <div class="slot-template-row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto auto auto;gap:var(--space-4);align-items:center;">
+      <div>
+        <div style="font-weight:600;">${DOMPurify.sanitize(s.clinic_name)}</div>
+        <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${DOMPurify.sanitize(s.doctor_name || '—')}</div>
+      </div>
+      <div>
+        <div style="font-weight:500;">${formatTimeRange(s.start_time, s.end_time)}</div>
+        ${s.room ? `<div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${DOMPurify.sanitize(s.room)}</div>` : ''}
+      </div>
+      <div>
+        <div style="font-weight:500;">${s.max_slots} slots</div>
+        <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">maximum</div>
+      </div>
+      <span class="badge ${s.is_active ? 'badge--active' : 'badge--inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
+      <button class="btn btn--ghost btn--sm" onclick="openEditModal('${s.id}')" type="button">Edit</button>
+      <button class="btn btn--danger btn--sm" onclick="openDeleteModal('${s.id}', '${DOMPurify.sanitize(s.clinic_name)}')" type="button">Delete</button>
+    </div>
+  `).join('');
+}
+
+function openAddModal() {
+  document.getElementById('schedule-modal-title').textContent = `Add Clinic — ${DAY_NAMES[currentDow]}`;
+  document.getElementById('schedule-modal-subtitle').textContent = `New specialist clinic session for ${DAY_NAMES[currentDow]}`;
+  document.getElementById('schedule-edit-id').value = '';
+  document.getElementById('schedule-edit-dow').value = currentDow;
+  document.getElementById('clinic-name').value = '';
+  document.getElementById('doctor-name').value = '';
+  document.getElementById('sched-start-time').value = '';
+  document.getElementById('sched-end-time').value = '';
+  document.getElementById('sched-max-slots').value = '';
+  document.getElementById('sched-room').value = '';
+  clearAllFormErrors(document.getElementById('schedule-form'));
+  openModal('schedule-modal');
+}
+
+function openEditModal(schedId) {
+  const sched = allSchedules.find(s => s.id === schedId);
+  if (!sched) return;
+  document.getElementById('schedule-modal-title').textContent = 'Edit Clinic Schedule';
+  document.getElementById('schedule-modal-subtitle').textContent = DAY_NAMES[sched.day_of_week];
+  document.getElementById('schedule-edit-id').value = schedId;
+  document.getElementById('schedule-edit-dow').value = sched.day_of_week;
+  document.getElementById('clinic-name').value = sched.clinic_name || '';
+  document.getElementById('doctor-name').value = sched.doctor_name || '';
+  document.getElementById('sched-start-time').value = (sched.start_time || '').slice(0, 5);
+  document.getElementById('sched-end-time').value = (sched.end_time || '').slice(0, 5);
+  document.getElementById('sched-max-slots').value = sched.max_slots || '';
+  document.getElementById('sched-room').value = sched.room || '';
+  clearAllFormErrors(document.getElementById('schedule-form'));
+  openModal('schedule-modal');
+}
+
+function openDeleteModal(schedId, clinicName) {
+  pendingDeleteId = schedId;
+  document.getElementById('delete-modal-msg').textContent =
+    `Delete the "${clinicName}" clinic schedule? This will deactivate it. Existing bookings will remain.`;
+  openModal('delete-modal');
+}
+
+async function saveSchedule() {
+  const form = document.getElementById('schedule-form');
+  const saveBtn = document.getElementById('schedule-modal-save');
+  const editId = document.getElementById('schedule-edit-id').value;
+  const dow = parseInt(document.getElementById('schedule-edit-dow').value, 10);
+  const clinicName = document.getElementById('clinic-name').value.trim();
+  const doctorName = document.getElementById('doctor-name').value.trim();
+  const startTime = document.getElementById('sched-start-time').value;
+  const endTime = document.getElementById('sched-end-time').value;
+  const maxSlots = document.getElementById('sched-max-slots').value;
+  const room = document.getElementById('sched-room').value.trim();
+
+  clearAllFormErrors(form);
+  let hasErrors = false;
+
+  if (!clinicName) { showFieldError(document.getElementById('clinic-name'), 'Clinic name is required'); hasErrors = true; }
+  if (!doctorName) { showFieldError(document.getElementById('doctor-name'), 'Doctor name is required'); hasErrors = true; }
+  if (!startTime) { showFieldError(document.getElementById('sched-start-time'), 'Start time is required'); hasErrors = true; }
+  if (!endTime) { showFieldError(document.getElementById('sched-end-time'), 'End time is required'); hasErrors = true; }
+  if (startTime && endTime && !validateTimeRange(startTime, endTime)) {
+    showFieldError(document.getElementById('sched-end-time'), 'End time must be after start time');
+    hasErrors = true;
+  }
+  if (!validateMaxSlots(maxSlots)) { showFieldError(document.getElementById('sched-max-slots'), 'Enter a number between 1 and 500'); hasErrors = true; }
+  if (hasErrors) return;
+
+  disableSubmitButton(saveBtn, 'Saving...');
+  try {
+    const db = getDB();
+    const payload = {
+      clinic_name: clinicName,
+      doctor_name: doctorName,
+      start_time: startTime,
+      end_time: endTime,
+      max_slots: parseInt(maxSlots, 10),
+      room: room || null,
+      is_active: true,
+    };
+
+    let result;
+    if (editId) {
+      result = await db.from('clinic_schedules').update(payload).eq('id', editId);
+      if (!result.error) await auditLog(adminSession.id, 'update_clinic_schedule', 'clinic_schedules', editId, payload);
+    } else {
+      payload.day_of_week = dow;
+      payload.created_by = adminSession.id;
+      result = await db.from('clinic_schedules').insert(payload).select().single();
+      if (!result.error && result.data) await auditLog(adminSession.id, 'create_clinic_schedule', 'clinic_schedules', result.data.id, payload);
+    }
+
+    if (result.error) {
+      Toast.error('Save Failed', result.error.message);
+    } else {
+      Toast.success('Saved', 'Clinic schedule saved successfully.');
+      closeModal('schedule-modal');
+      await loadSchedules();
+    }
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(saveBtn);
+  }
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const deleteBtn = document.getElementById('delete-modal-confirm');
+  disableSubmitButton(deleteBtn, 'Deleting...');
+  try {
+    const db = getDB();
+    const { error } = await db.from('clinic_schedules').update({ is_active: false }).eq('id', pendingDeleteId);
+    if (error) {
+      Toast.error('Delete Failed', error.message);
+    } else {
+      await auditLog(adminSession.id, 'delete_clinic_schedule', 'clinic_schedules', pendingDeleteId, {});
+      Toast.success('Deleted', 'Clinic schedule deactivated.');
+      closeModal('delete-modal');
+      await loadSchedules();
+    }
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(deleteBtn);
+    pendingDeleteId = null;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initClinicSchedules);
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic Booking — AMH Patient Portal</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Patient navigation">
+  <a href="../patient/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">Ashraff Hospital</span>
+      <span class="navbar__brand-sub">Patient Portal</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+    <a href="../patient/clinic-booking.html" class="navbar__link navbar__link--active" aria-current="page">🏥 Book Clinic</a>
+    <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+    <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="nav-avatar">?</div>
+      <span class="navbar__user-name" id="nav-user-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" id="logout-btn" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+  <a href="../patient/clinic-booking.html" class="navbar__link navbar__link--active">🏥 Book Clinic</a>
+  <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+  <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  <button class="navbar__logout" id="mobile-logout-btn" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width: 900px; margin: var(--navbar-height) auto 0;">
+  <div class="page-header">
+    <h1 class="page-header__title">🏥 Clinic Appointment Booking</h1>
+    <p class="page-header__subtitle">Book a specialist clinic appointment</p>
+  </div>
+
+  <!-- Step Indicators -->
+  <div id="booking-steps-container"></div>
+
+  <!-- Step 1: Clinic Selection -->
+  <div data-step="1" style="display:block;">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Step 1: Select a Clinic</h2>
+        <p class="card__subtitle">Choose the specialist clinic you need</p>
+      </div>
+      <div class="card__body">
+        <div id="clinic-grid-container" class="grid grid--auto" style="min-height:120px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Calendar -->
+  <div data-step="2" style="display:none;">
+    <button class="btn btn--ghost btn--sm" id="back-to-step1" type="button" style="margin-bottom:var(--space-4);">
+      ← Back to Clinics
+    </button>
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Step 2: Select a Date</h2>
+        <p class="card__subtitle" id="step2-clinic-label">Showing availability for selected clinic</p>
+      </div>
+      <div class="card__body">
+        <div id="calendar-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Time Slot Selection -->
+  <div data-step="3" style="display:none;">
+    <button class="btn btn--ghost btn--sm" id="back-to-step2" type="button" style="margin-bottom:var(--space-4);">
+      ← Back to Calendar
+    </button>
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Step 3: Select a Time Slot</h2>
+        <p class="card__subtitle" id="step3-date-label">Choose your preferred time</p>
+      </div>
+      <div class="card__body">
+        <div id="slot-picker-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Confirmation -->
+  <div data-step="4" style="display:none;">
+    <div id="booking-confirm-container"></div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/booking.js"></script>
+
+<script>
+'use strict';
+
+let currentPatient = null;
+let blockedDates = [];
+let allClinics = [];
+
+async function initClinicBooking() {
+  currentPatient = requirePatientAuth();
+  if (!currentPatient) return;
+
+  startInactivityDetection();
+
+  const navAvatar = document.getElementById('nav-avatar');
+  const navName = document.getElementById('nav-user-name');
+  if (navAvatar) navAvatar.textContent = getInitials(currentPatient.full_name);
+  if (navName) navName.textContent = currentPatient.full_name;
+
+  document.getElementById('logout-btn')?.addEventListener('click', patientLogout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', patientLogout);
+
+  const menuToggle = document.getElementById('navbar-menu-toggle');
+  const mobileNav = document.getElementById('navbar-mobile-nav');
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    menuToggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  BookingState.type = 'clinic';
+  BookingState.currentStep = 1;
+
+  const stepsContainer = document.getElementById('booking-steps-container');
+  if (stepsContainer) stepsContainer.innerHTML = renderBookingStepsHTML('clinic');
+  updateBookingSteps(1);
+
+  // Load blocked dates in background
+  blockedDates = await getBlockedDateStrings();
+
+  // Load and render clinics (Step 1)
+  await loadClinics();
+
+  // Back button handlers
+  document.getElementById('back-to-step1')?.addEventListener('click', () => {
+    BookingState.selectedDate = null;
+    BookingState.currentStep = 1;
+    updateBookingSteps(1);
+    renderClinics(allClinics);
+  });
+
+  document.getElementById('back-to-step2')?.addEventListener('click', () => {
+    BookingState.selectedTemplate = null;
+    BookingState.currentStep = 2;
+    updateBookingSteps(2);
+    showCalendar();
+  });
+}
+
+/**
+ * Load active clinics from Supabase.
+ */
+async function loadClinics() {
+  const container = document.getElementById('clinic-grid-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="skeleton skeleton--card"></div>
+    <div class="skeleton skeleton--card"></div>
+    <div class="skeleton skeleton--card"></div>
+  `;
+
+  const { data: clinics, error } = await getActiveClinics();
+
+  if (error || !clinics) {
+    container.innerHTML = `
+      <div class="alert alert--danger">
+        <span class="alert__icon">⚠️</span>
+        <div class="alert__content"><div class="alert__text">Failed to load clinics: ${sanitizeText(error || 'Unknown error')}</div></div>
+      </div>
+    `;
+    return;
+  }
+
+  allClinics = clinics;
+
+  if (clinics.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">🏥</div>
+        <div class="empty-state__title">No Clinics Available</div>
+        <div class="empty-state__text">No specialist clinics are currently accepting bookings. Please check back later or visit OPD.</div>
+      </div>
+    `;
+    return;
+  }
+
+  renderClinics(clinics);
+}
+
+/**
+ * Render clinic selection cards.
+ * @param {Array} clinics
+ */
+function renderClinics(clinics) {
+  const container = document.getElementById('clinic-grid-container');
+  if (!container) return;
+
+  container.innerHTML = clinics.map(clinic => `
+    <div
+      class="clinic-card"
+      data-clinic-id="${clinic.id}"
+      data-clinic-name="${sanitizeText(clinic.clinic_name)}"
+      role="button"
+      tabindex="0"
+      aria-label="Select ${sanitizeText(clinic.clinic_name)}"
+    >
+      <div class="clinic-card__icon" aria-hidden="true">🏥</div>
+      <div class="clinic-card__name">${sanitizeText(clinic.clinic_name)}</div>
+      ${clinic.specialty ? `<div class="clinic-card__specialty">${sanitizeText(clinic.specialty)}</div>` : ''}
+      ${clinic.doctor_name ? `
+        <div class="clinic-card__doctor">
+          <span aria-hidden="true">👨‍⚕️</span>
+          <span>${sanitizeText(clinic.doctor_name)}</span>
+        </div>
+      ` : ''}
+      <div class="clinic-card__next">→ Select to view availability</div>
+    </div>
+  `).join('');
+
+  // Attach click handlers
+  container.querySelectorAll('.clinic-card').forEach(card => {
+    const handleSelect = () => {
+      BookingState.clinicId = card.dataset.clinicId;
+      BookingState.clinicName = card.dataset.clinicName;
+      BookingState.currentStep = 2;
+      updateBookingSteps(2);
+
+      const clinicLabel = document.getElementById('step2-clinic-label');
+      if (clinicLabel) clinicLabel.textContent = `Select a date for ${BookingState.clinicName}`;
+
+      showCalendar();
+    };
+
+    card.addEventListener('click', handleSelect);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(); }
+    });
+  });
+}
+
+/**
+ * Render the calendar for the selected clinic (Step 2).
+ */
+async function showCalendar() {
+  const calContainer = document.getElementById('calendar-container');
+  if (!calContainer || !BookingState.clinicId) return;
+
+  await renderBookingCalendar(calContainer, {
+    type: 'clinic',
+    clinicId: BookingState.clinicId,
+    blockedDates,
+    onDateSelect: handleDateSelect,
+  });
+}
+
+async function handleDateSelect(dateStr) {
+  BookingState.selectedDate = dateStr;
+  BookingState.currentStep = 3;
+  updateBookingSteps(3);
+
+  const dateLabel = document.getElementById('step3-date-label');
+  if (dateLabel) dateLabel.textContent = `Available time boxes for ${formatDate(dateStr)} — ${BookingState.clinicName}`;
+
+  const slotContainer = document.getElementById('slot-picker-container');
+  await renderSlotPicker(slotContainer, dateStr, 'clinic', BookingState.clinicId, handleTemplateSelect);
+}
+
+function handleTemplateSelect(template) {
+  BookingState.selectedTemplate = template;
+  BookingState.currentStep = 4;
+  updateBookingSteps(4);
+
+  const confirmContainer = document.getElementById('booking-confirm-container');
+  renderBookingConfirmation(confirmContainer, BookingState, handleConfirm);
+
+  confirmContainer.addEventListener('booking:back', () => {
+    BookingState.currentStep = 3;
+    updateBookingSteps(3);
+  }, { once: true });
+}
+
+async function handleConfirm() {
+  await submitBooking(currentPatient.id, BookingState);
+}
+
+document.addEventListener('DOMContentLoaded', initClinicBooking);
+</script>
+</body>
+</html>

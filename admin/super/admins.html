@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Admins — AMH Super Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Super Admin</span>
+      <span class="navbar__brand-sub">Admin Management</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/super/admins.html" class="navbar__link navbar__link--active" aria-current="page">👥 Admins</a>
+    <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+    <a href="../../admin/super/audit.html" class="navbar__link">📋 Audit Log</a>
+    <a href="../../admin/super/reports.html" class="navbar__link">📊 Reports</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/super/admins.html" class="navbar__link navbar__link--active">👥 Admins</a>
+  <a href="../../admin/super/blocked-dates.html" class="navbar__link">📆 Blocked Dates</a>
+  <a href="../../admin/super/audit.html" class="navbar__link">📋 Audit Log</a>
+  <a href="../../admin/super/reports.html" class="navbar__link">📊 Reports</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1000px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">👥 Admin Users</h1>
+      <p class="page-header__subtitle">Manage hospital admin accounts and their roles</p>
+    </div>
+    <button class="btn btn--primary" id="add-admin-btn" type="button">+ Add Admin</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:var(--space-6);">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Admins</div>
+      <div class="stat-card__value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Active</div>
+      <div class="stat-card__value" id="stat-active" style="color:var(--color-success-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Inactive</div>
+      <div class="stat-card__value" id="stat-inactive" style="color:var(--color-text-muted);">—</div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table class="table" aria-label="Admin users">
+      <thead>
+        <tr>
+          <th>Admin</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="admins-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:var(--space-8);"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <div class="empty-state__icon">👥</div>
+    <div class="empty-state__title">No Admins Found</div>
+    <div class="empty-state__text">No admin accounts exist yet.</div>
+  </div>
+</main>
+
+<!-- Add/Edit Admin Modal -->
+<div class="modal-backdrop" id="admin-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
+  <div class="modal">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="admin-modal-title">Add Admin</div>
+        <div class="modal__subtitle" id="admin-modal-subtitle">Create a new hospital admin account</div>
+      </div>
+      <button class="modal__close" id="admin-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body">
+      <form id="admin-form" novalidate>
+        <input type="hidden" id="admin-edit-id">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label form-label--required" for="admin-full-name">Full Name</label>
+            <input type="text" id="admin-full-name" class="form-input" placeholder="e.g. Dr. Ahmed Farook" maxlength="100" aria-required="true">
+          </div>
+          <div class="form-group">
+            <label class="form-label form-label--required" for="admin-email">Email Address</label>
+            <input type="email" id="admin-email" class="form-input" placeholder="admin@amhospital.lk" aria-required="true">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label--required" for="admin-role">Role</label>
+          <select id="admin-role" class="form-input" aria-required="true">
+            <option value="">Select role…</option>
+            <option value="super_admin">Super Admin (full access)</option>
+            <option value="opd_admin">OPD Admin (OPD only)</option>
+            <option value="clinic_admin">Clinic Admin (clinics only)</option>
+          </select>
+          <p class="form-hint">Role determines what sections the admin can access</p>
+        </div>
+
+        <div class="form-group" id="password-group">
+          <label class="form-label form-label--required" for="admin-password">Temporary Password</label>
+          <input type="password" id="admin-password" class="form-input" placeholder="Minimum 8 characters" minlength="8" aria-required="true">
+          <p class="form-hint">Admin will be prompted to change this on first login</p>
+        </div>
+
+        <div class="form-group" id="status-group" style="display:none;">
+          <label class="form-label" for="admin-is-active">Account Status</label>
+          <select id="admin-is-active" class="form-input">
+            <option value="true">Active</option>
+            <option value="false">Inactive (blocked)</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="admin-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="admin-modal-save" type="button">Save Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deactivate Confirmation Modal -->
+<div class="modal-backdrop" id="deactivate-modal" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal modal--sm modal--confirm" data-confirm-only="true">
+    <div class="modal__header">
+      <div><div class="modal__title" id="deactivate-modal-title" style="color:var(--color-warning-dark);">Deactivate Admin</div></div>
+    </div>
+    <div class="modal__body">
+      <p id="deactivate-modal-msg" style="color:var(--color-text-secondary);">Deactivate this admin account? They will no longer be able to log in.</p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="deactivate-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--warning" id="deactivate-modal-confirm" type="button">Deactivate</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let allAdmins = [];
+let pendingDeactivateId = null;
+
+const ROLE_LABELS = {
+  super_admin: 'Super Admin',
+  opd_admin: 'OPD Admin',
+  clinic_admin: 'Clinic Admin',
+};
+
+async function initAdminsPage() {
+  adminSession = await requireAdminAuth(['super_admin']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  document.getElementById('add-admin-btn').addEventListener('click', openAddModal);
+  document.getElementById('admin-modal-close').addEventListener('click', () => closeModal('admin-modal'));
+  document.getElementById('admin-modal-cancel').addEventListener('click', () => closeModal('admin-modal'));
+  document.getElementById('admin-modal-save').addEventListener('click', saveAdmin);
+  document.getElementById('deactivate-modal-cancel').addEventListener('click', () => closeModal('deactivate-modal'));
+  document.getElementById('deactivate-modal-confirm').addEventListener('click', confirmDeactivate);
+
+  await loadAdmins();
+}
+
+async function loadAdmins() {
+  try {
+    const db = getDB();
+    const { data, error } = await db.from('admin_users').select('*').order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    allAdmins = data || [];
+    updateStats(allAdmins);
+    renderAdmins(allAdmins);
+  } catch (err) {
+    Toast.error('Load Failed', err.message);
+  }
+}
+
+function updateStats(admins) {
+  document.getElementById('stat-total').textContent = admins.length;
+  document.getElementById('stat-active').textContent = admins.filter(a => a.is_active).length;
+  document.getElementById('stat-inactive').textContent = admins.filter(a => !a.is_active).length;
+}
+
+function renderAdmins(admins) {
+  if (admins.length === 0) {
+    document.getElementById('admins-tbody').innerHTML = '';
+    document.getElementById('empty-state').style.display = '';
+    return;
+  }
+  document.getElementById('empty-state').style.display = 'none';
+  const tbody = document.getElementById('admins-tbody');
+  tbody.innerHTML = admins.map(a => {
+    const isSelf = a.id === adminSession.id;
+    const createdAt = a.created_at ? new Date(a.created_at).toLocaleDateString('en-GB') : '—';
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:var(--space-3);">
+            <div style="width:36px;height:36px;background:var(--color-primary-tint);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--color-primary);font-size:var(--font-size-sm);">
+              ${DOMPurify.sanitize(a.full_name.charAt(0).toUpperCase())}
+            </div>
+            <div>
+              <div style="font-weight:600;">${DOMPurify.sanitize(a.full_name)}</div>
+              ${isSelf ? '<div style="font-size:var(--font-size-xs);color:var(--color-primary);">(you)</div>' : ''}
+            </div>
+          </div>
+        </td>
+        <td style="color:var(--color-text-secondary);">${DOMPurify.sanitize(a.email)}</td>
+        <td><span class="badge badge--info">${ROLE_LABELS[a.role] || a.role}</span></td>
+        <td><span class="badge ${a.is_active ? 'badge--active' : 'badge--inactive'}">${a.is_active ? 'Active' : 'Inactive'}</span></td>
+        <td style="font-size:var(--font-size-sm);color:var(--color-text-muted);">${createdAt}</td>
+        <td style="text-align:right;">
+          <button class="btn btn--ghost btn--sm" onclick="openEditModal('${a.id}')" type="button">✏️ Edit</button>
+          ${!isSelf ? `<button class="btn btn--${a.is_active ? 'warning' : 'ghost'} btn--sm" onclick="openDeactivateModal('${a.id}', '${DOMPurify.sanitize(a.full_name)}')" type="button">${a.is_active ? '🔒 Deactivate' : '✅ Activate'}</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openAddModal() {
+  document.getElementById('admin-modal-title').textContent = 'Add Admin';
+  document.getElementById('admin-modal-subtitle').textContent = 'Create a new hospital admin account';
+  document.getElementById('admin-edit-id').value = '';
+  document.getElementById('admin-full-name').value = '';
+  document.getElementById('admin-email').value = '';
+  document.getElementById('admin-role').value = '';
+  document.getElementById('admin-password').value = '';
+  document.getElementById('password-group').style.display = '';
+  document.getElementById('status-group').style.display = 'none';
+  document.getElementById('admin-email').disabled = false;
+  clearAllFormErrors(document.getElementById('admin-form'));
+  openModal('admin-modal');
+}
+
+function openEditModal(adminId) {
+  const admin = allAdmins.find(a => a.id === adminId);
+  if (!admin) return;
+  document.getElementById('admin-modal-title').textContent = 'Edit Admin';
+  document.getElementById('admin-modal-subtitle').textContent = admin.full_name;
+  document.getElementById('admin-edit-id').value = adminId;
+  document.getElementById('admin-full-name').value = admin.full_name;
+  document.getElementById('admin-email').value = admin.email;
+  document.getElementById('admin-email').disabled = true;
+  document.getElementById('admin-role').value = admin.role;
+  document.getElementById('admin-password').value = '';
+  document.getElementById('password-group').style.display = 'none';
+  document.getElementById('status-group').style.display = '';
+  document.getElementById('admin-is-active').value = admin.is_active ? 'true' : 'false';
+  clearAllFormErrors(document.getElementById('admin-form'));
+  openModal('admin-modal');
+}
+
+function openDeactivateModal(adminId, name) {
+  pendingDeactivateId = adminId;
+  const admin = allAdmins.find(a => a.id === adminId);
+  const action = admin && admin.is_active ? 'Deactivate' : 'Activate';
+  document.getElementById('deactivate-modal-title').textContent = `${action} Admin`;
+  document.getElementById('deactivate-modal-msg').textContent = `${action} admin account for "${name}"?`;
+  document.getElementById('deactivate-modal-confirm').textContent = action;
+  openModal('deactivate-modal');
+}
+
+async function saveAdmin() {
+  const editId = document.getElementById('admin-edit-id').value;
+  const fullName = document.getElementById('admin-full-name').value.trim();
+  const email = document.getElementById('admin-email').value.trim();
+  const role = document.getElementById('admin-role').value;
+  const password = document.getElementById('admin-password').value;
+  const isActive = document.getElementById('admin-is-active').value === 'true';
+  const saveBtn = document.getElementById('admin-modal-save');
+
+  const form = document.getElementById('admin-form');
+  clearAllFormErrors(form);
+  let hasErrors = false;
+
+  if (!fullName) { showFieldError(document.getElementById('admin-full-name'), 'Full name is required'); hasErrors = true; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showFieldError(document.getElementById('admin-email'), 'Valid email is required'); hasErrors = true; }
+  if (!role) { showFieldError(document.getElementById('admin-role'), 'Role is required'); hasErrors = true; }
+  if (!editId && (!password || password.length < 8)) { showFieldError(document.getElementById('admin-password'), 'Password must be at least 8 characters'); hasErrors = true; }
+  if (hasErrors) return;
+
+  disableSubmitButton(saveBtn, 'Saving...');
+  try {
+    const db = getDB();
+
+    if (editId) {
+      // Update name and role only
+      const { error } = await db.from('admin_users').update({
+        full_name: fullName,
+        role,
+        is_active: isActive,
+      }).eq('id', editId);
+
+      if (error) throw new Error(error.message);
+      await auditLog(adminSession.id, 'update_admin', 'admin_users', editId, { fullName, role, isActive });
+      Toast.success('Saved', 'Admin account updated.');
+    } else {
+      // Create new admin via Supabase Auth + admin_users table
+      const { data: authData, error: authError } = await db.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+
+      if (authError) throw new Error('Auth error: ' + authError.message);
+
+      const { data, error } = await db.from('admin_users').insert({
+        id: authData.user.id,
+        full_name: fullName,
+        email,
+        role,
+        is_active: true,
+      }).select().single();
+
+      if (error) throw new Error(error.message);
+      await auditLog(adminSession.id, 'create_admin', 'admin_users', data.id, { fullName, email, role });
+      Toast.success('Created', 'Admin account created successfully.');
+    }
+
+    closeModal('admin-modal');
+    await loadAdmins();
+  } catch (err) {
+    Toast.error('Save Failed', err.message);
+  } finally {
+    enableSubmitButton(saveBtn);
+  }
+}
+
+async function confirmDeactivate() {
+  if (!pendingDeactivateId) return;
+  const confirmBtn = document.getElementById('deactivate-modal-confirm');
+  const admin = allAdmins.find(a => a.id === pendingDeactivateId);
+  const newStatus = admin ? !admin.is_active : false;
+
+  disableSubmitButton(confirmBtn, 'Saving...');
+  try {
+    const db = getDB();
+    const { error } = await db.from('admin_users').update({ is_active: newStatus }).eq('id', pendingDeactivateId);
+    if (error) throw new Error(error.message);
+    await auditLog(adminSession.id, newStatus ? 'activate_admin' : 'deactivate_admin', 'admin_users', pendingDeactivateId, {});
+    Toast.success(newStatus ? 'Activated' : 'Deactivated', 'Admin account status updated.');
+    closeModal('deactivate-modal');
+    await loadAdmins();
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(confirmBtn);
+    pendingDeactivateId = null;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initAdminsPage);
+</script>
+</body>
+</html>

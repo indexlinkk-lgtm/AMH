@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinic Bookings — AMH Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Admin</span>
+      <span class="navbar__brand-sub">Clinic Queue</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/clinic/bookings.html" class="navbar__link navbar__link--active" aria-current="page">🏥 Clinic Queue</a>
+    <a href="../../admin/clinic/schedules.html" class="navbar__link">📅 Schedules</a>
+    <a href="../../admin/patients/verify.html" class="navbar__link">🔍 Verify Patient</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/clinic/bookings.html" class="navbar__link navbar__link--active">🏥 Clinic Queue</a>
+  <a href="../../admin/clinic/schedules.html" class="navbar__link">📅 Schedules</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1100px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">🏥 Clinic Bookings</h1>
+      <p class="page-header__subtitle">Manage specialist clinic appointments by date and clinic</p>
+    </div>
+    <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;">
+      <input type="date" id="queue-date" class="form-input" style="width:180px;" aria-label="Select date">
+      <button class="btn btn--ghost" id="refresh-btn" type="button">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:var(--space-6);">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Booked</div>
+      <div class="stat-card__value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Waiting</div>
+      <div class="stat-card__value" id="stat-waiting" style="color:var(--color-warning-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Seen</div>
+      <div class="stat-card__value" id="stat-seen" style="color:var(--color-success-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Cancelled</div>
+      <div class="stat-card__value" id="stat-cancelled" style="color:var(--color-danger-dark);">—</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-5);">
+    <input type="search" id="search-input" class="form-input" placeholder="🔍 Search patient name or ID…" style="flex:1;min-width:220px;" aria-label="Search patients">
+    <select id="clinic-filter" class="form-input" style="width:200px;" aria-label="Filter by clinic">
+      <option value="">All Clinics</option>
+    </select>
+    <select id="status-filter" class="form-input" style="width:160px;" aria-label="Filter by status">
+      <option value="">All Statuses</option>
+      <option value="booked">Booked</option>
+      <option value="called">Called</option>
+      <option value="seen">Seen</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="no_show">No Show</option>
+    </select>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="table-wrapper">
+    <table class="table" id="bookings-table" aria-label="Clinic bookings for selected date">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Patient</th>
+          <th>Patient ID</th>
+          <th>Clinic</th>
+          <th>Doctor</th>
+          <th>Status</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookings-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:var(--space-8);"><div class="spinner"></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <div class="empty-state__icon">🏥</div>
+    <div class="empty-state__title">No Clinic Bookings Found</div>
+    <div class="empty-state__text" id="empty-state-text">No clinic bookings for the selected date and filters.</div>
+  </div>
+</main>
+
+<!-- Status Update Modal -->
+<div class="modal-backdrop" id="status-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="status-modal-title">Update Booking Status</div>
+        <div class="modal__subtitle" id="status-modal-subtitle"></div>
+      </div>
+      <button class="modal__close" id="status-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="status-booking-id">
+      <div class="form-group">
+        <label class="form-label form-label--required" for="new-status-select">New Status</label>
+        <select id="new-status-select" class="form-input" aria-required="true">
+          <option value="booked">Booked</option>
+          <option value="called">Called</option>
+          <option value="seen">Seen</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="no_show">No Show</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="status-notes">Notes (optional)</label>
+        <textarea id="status-notes" class="form-input" rows="2" placeholder="Any notes about this visit…" maxlength="500"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="status-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="status-modal-save" type="button">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let allBookings = [];
+
+const STATUS_LABELS = {
+  booked: { label: 'Booked', cls: 'badge--info' },
+  called: { label: 'Called', cls: 'badge--warning' },
+  seen:   { label: 'Seen',   cls: 'badge--active' },
+  cancelled: { label: 'Cancelled', cls: 'badge--inactive' },
+  no_show:   { label: 'No Show', cls: 'badge--danger' },
+};
+
+async function initClinicBookings() {
+  adminSession = await requireAdminAuth(['clinic']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  document.getElementById('queue-date').value = getLocalDateString();
+
+  document.getElementById('queue-date').addEventListener('change', loadBookings);
+  document.getElementById('refresh-btn').addEventListener('click', loadBookings);
+  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('clinic-filter').addEventListener('change', applyFilters);
+  document.getElementById('status-filter').addEventListener('change', applyFilters);
+
+  document.getElementById('status-modal-close').addEventListener('click', () => closeModal('status-modal'));
+  document.getElementById('status-modal-cancel').addEventListener('click', () => closeModal('status-modal'));
+  document.getElementById('status-modal-save').addEventListener('click', saveStatus);
+
+  await loadBookings();
+}
+
+function getLocalDateString() {
+  return new Date().toLocaleDateString('en-CA');
+}
+
+async function loadBookings() {
+  const date = document.getElementById('queue-date').value;
+  if (!date) return;
+
+  document.getElementById('bookings-tbody').innerHTML = `
+    <tr><td colspan="7" style="text-align:center;padding:var(--space-8);">
+      <div class="spinner"></div>
+    </td></tr>`;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('bookings-table').style.display = '';
+
+  try {
+    const db = getDB();
+    const { data, error } = await db
+      .from('clinic_bookings')
+      .select('*, patients(id,unique_patient_id,full_name,age,gender), clinic_schedules(id,clinic_name,doctor_name,start_time,end_time)')
+      .eq('booking_date', date)
+      .order('token_number', { ascending: true });
+
+    if (error) throw new Error(error.message);
+    allBookings = data || [];
+    buildClinicFilter(allBookings);
+    applyFilters();
+    updateStats(allBookings);
+  } catch (err) {
+    Toast.error('Load Failed', err.message);
+    showEmptyState('Error loading clinic bookings.');
+  }
+}
+
+function buildClinicFilter(bookings) {
+  const clinicFilter = document.getElementById('clinic-filter');
+  const clinicSet = new Map();
+  bookings.forEach(b => {
+    if (b.clinic_schedules) {
+      clinicSet.set(b.clinic_schedules.id, b.clinic_schedules.clinic_name);
+    }
+  });
+  clinicFilter.innerHTML = '<option value="">All Clinics</option>' +
+    [...clinicSet.entries()].map(([id, name]) =>
+      `<option value="${id}">${DOMPurify.sanitize(name)}</option>`
+    ).join('');
+}
+
+function applyFilters() {
+  const query = document.getElementById('search-input').value.toLowerCase().trim();
+  const clinicVal = document.getElementById('clinic-filter').value;
+  const statusVal = document.getElementById('status-filter').value;
+
+  const filtered = allBookings.filter(b => {
+    const patient = b.patients || {};
+    const matchSearch = !query ||
+      (patient.full_name || '').toLowerCase().includes(query) ||
+      (patient.unique_patient_id || '').toLowerCase().includes(query);
+    const matchClinic = !clinicVal || (b.clinic_schedules && b.clinic_schedules.id === clinicVal);
+    const matchStatus = !statusVal || b.status === statusVal;
+    return matchSearch && matchClinic && matchStatus;
+  });
+
+  renderBookings(filtered);
+}
+
+function updateStats(bookings) {
+  document.getElementById('stat-total').textContent = bookings.length;
+  document.getElementById('stat-waiting').textContent = bookings.filter(b => b.status === 'booked').length;
+  document.getElementById('stat-seen').textContent = bookings.filter(b => b.status === 'seen' || b.status === 'called').length;
+  document.getElementById('stat-cancelled').textContent = bookings.filter(b => b.status === 'cancelled' || b.status === 'no_show').length;
+}
+
+function showEmptyState(msg) {
+  document.getElementById('bookings-tbody').innerHTML = '';
+  document.getElementById('bookings-table').style.display = 'none';
+  document.getElementById('empty-state-text').textContent = msg || 'No bookings found.';
+  document.getElementById('empty-state').style.display = '';
+}
+
+function renderBookings(bookings) {
+  if (bookings.length === 0) {
+    showEmptyState('No clinic bookings match your filters for the selected date.');
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('bookings-table').style.display = '';
+
+  const tbody = document.getElementById('bookings-tbody');
+  tbody.innerHTML = bookings.map(b => {
+    const patient = b.patients || {};
+    const sched = b.clinic_schedules || {};
+    const statusInfo = STATUS_LABELS[b.status] || { label: b.status, cls: 'badge--info' };
+
+    return `
+      <tr>
+        <td><strong style="font-size:var(--font-size-lg);color:var(--color-primary);">#${b.token_number || '—'}</strong></td>
+        <td>
+          <div style="font-weight:600;">${DOMPurify.sanitize(patient.full_name || '—')}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${patient.age ? patient.age + ' yrs, ' + (patient.gender || '') : ''}</div>
+        </td>
+        <td><span style="font-family:monospace;font-size:var(--font-size-sm);">${DOMPurify.sanitize(patient.unique_patient_id || '—')}</span></td>
+        <td>${DOMPurify.sanitize(sched.clinic_name || '—')}</td>
+        <td>${DOMPurify.sanitize(sched.doctor_name || '—')}</td>
+        <td><span class="badge ${statusInfo.cls}">${statusInfo.label}</span></td>
+        <td style="text-align:right;">
+          <button class="btn btn--primary btn--sm"
+            onclick="openStatusModal('${b.id}', '${DOMPurify.sanitize(patient.full_name || '')}', '${b.status}')"
+            type="button">✏️ Status</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openStatusModal(bookingId, patientName, currentStatus) {
+  document.getElementById('status-booking-id').value = bookingId;
+  document.getElementById('status-modal-subtitle').textContent = patientName;
+  document.getElementById('new-status-select').value = currentStatus;
+  document.getElementById('status-notes').value = '';
+  openModal('status-modal');
+}
+
+async function saveStatus() {
+  const bookingId = document.getElementById('status-booking-id').value;
+  const newStatus = document.getElementById('new-status-select').value;
+  const notes = document.getElementById('status-notes').value.trim();
+  const saveBtn = document.getElementById('status-modal-save');
+
+  disableSubmitButton(saveBtn, 'Saving…');
+  try {
+    const db = getDB();
+    const payload = { status: newStatus };
+    if (notes) payload.admin_notes = notes;
+    if (newStatus === 'seen') payload.seen_at = new Date().toISOString();
+    if (newStatus === 'called') payload.called_at = new Date().toISOString();
+
+    const { error } = await db.from('clinic_bookings').update(payload).eq('id', bookingId);
+    if (error) {
+      Toast.error('Update Failed', error.message);
+    } else {
+      await auditLog(adminSession.id, 'update_clinic_booking_status', 'clinic_bookings', bookingId, { newStatus, notes });
+      Toast.success('Updated', 'Booking status updated.');
+      closeModal('status-modal');
+      await loadBookings();
+    }
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(saveBtn);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initClinicBookings);
+</script>
+</body>
+</html>

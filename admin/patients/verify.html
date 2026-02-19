@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Patient — AMH Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Admin</span>
+      <span class="navbar__brand-sub">Patient Verification</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/patients/verify.html" class="navbar__link navbar__link--active" aria-current="page">🔍 Verify Patient</a>
+    <a href="../../admin/patients/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/patients/verify.html" class="navbar__link navbar__link--active">🔍 Verify Patient</a>
+  <a href="../../admin/patients/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:900px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header">
+    <h1 class="page-header__title">🔍 Verify Patient</h1>
+    <p class="page-header__subtitle">Search patient by ID, NIC, phone number, or scan QR code</p>
+  </div>
+
+  <!-- Search Panel -->
+  <div class="card" style="margin-bottom:var(--space-6);">
+    <div class="card__body">
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;">
+          <label class="form-label" for="search-query">Search Patient</label>
+          <input
+            type="search"
+            id="search-query"
+            class="form-input"
+            placeholder="Patient ID, NIC, name, or phone…"
+            aria-label="Search patient"
+            autocomplete="off"
+          >
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:var(--space-2);">
+          <button class="btn btn--primary" id="search-btn" type="button">🔍 Search</button>
+          <button class="btn btn--ghost" id="qr-scan-btn" type="button" title="Scan QR Code">📷 Scan QR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Scanner Panel (hidden by default) -->
+  <div class="card" id="qr-scanner-panel" style="display:none;margin-bottom:var(--space-6);">
+    <div class="card__body" style="text-align:center;">
+      <p style="color:var(--color-text-secondary);margin-bottom:var(--space-4);">Point camera at patient's QR code</p>
+      <div id="qr-reader" style="max-width:400px;margin:0 auto;"></div>
+      <button class="btn btn--ghost" id="qr-cancel-btn" style="margin-top:var(--space-4);" type="button">✕ Cancel Scan</button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="search-loading" style="display:none;text-align:center;padding:var(--space-8);">
+    <div class="spinner"></div>
+    <p style="color:var(--color-text-muted);margin-top:var(--space-3);">Searching...</p>
+  </div>
+
+  <!-- No Results -->
+  <div id="no-results" class="empty-state" style="display:none;">
+    <div class="empty-state__icon">🔍</div>
+    <div class="empty-state__title">No Patient Found</div>
+    <div class="empty-state__text">No patient matched your search. Try different search terms.</div>
+  </div>
+
+  <!-- Search Results (multiple) -->
+  <div id="search-results" style="display:none;margin-bottom:var(--space-6);">
+    <h2 style="font-size:var(--font-size-base);font-weight:600;margin-bottom:var(--space-4);color:var(--color-text-secondary);">
+      Search Results (<span id="results-count">0</span>)
+    </h2>
+    <div id="results-list" style="display:flex;flex-direction:column;gap:var(--space-3);"></div>
+  </div>
+
+  <!-- Patient Detail Card -->
+  <div id="patient-detail" style="display:none;">
+    <div class="card">
+      <div class="card__body">
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;gap:var(--space-5);flex-wrap:wrap;margin-bottom:var(--space-6);">
+          <div style="width:64px;height:64px;background:var(--color-primary-tint);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">👤</div>
+          <div style="flex:1;">
+            <h2 id="pd-name" style="font-size:var(--font-size-xl);font-weight:700;margin-bottom:var(--space-1);"></h2>
+            <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center;">
+              <span id="pd-pid" style="font-family:monospace;font-size:var(--font-size-sm);background:var(--color-bg-secondary);padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);font-weight:600;"></span>
+              <span id="pd-status-badge" class="badge"></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:var(--space-2);">
+            <button class="btn btn--ghost btn--sm" id="print-card-btn" type="button">🖨 Print Card</button>
+            <button class="btn btn--ghost btn--sm" id="add-prescription-btn" type="button">💊 Add Rx</button>
+          </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);margin-bottom:var(--space-6);">
+          <div>
+            <div class="form-label">Age</div>
+            <div id="pd-age" style="font-weight:500;"></div>
+          </div>
+          <div>
+            <div class="form-label">Gender</div>
+            <div id="pd-gender" style="font-weight:500;"></div>
+          </div>
+          <div>
+            <div class="form-label">NIC Number</div>
+            <div id="pd-nic" style="font-weight:500;font-family:monospace;"></div>
+          </div>
+          <div>
+            <div class="form-label">Phone</div>
+            <div id="pd-phone" style="font-weight:500;"></div>
+          </div>
+          <div style="grid-column:1/-1;">
+            <div class="form-label">Address</div>
+            <div id="pd-address" style="font-weight:500;"></div>
+          </div>
+          <div id="guardian-section" style="display:none;grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+            <div>
+              <div class="form-label">Guardian Name</div>
+              <div id="pd-guardian" style="font-weight:500;"></div>
+            </div>
+            <div>
+              <div class="form-label">Guardian Phone</div>
+              <div id="pd-guardian-phone" style="font-weight:500;"></div>
+            </div>
+          </div>
+          <div>
+            <div class="form-label">Registered</div>
+            <div id="pd-registered" style="font-weight:500;font-size:var(--font-size-sm);"></div>
+          </div>
+        </div>
+
+        <!-- Today's Bookings -->
+        <div>
+          <h3 style="font-size:var(--font-size-base);font-weight:600;margin-bottom:var(--space-3);">Today's Bookings</h3>
+          <div id="pd-bookings" style="display:flex;flex-direction:column;gap:var(--space-2);">
+            <div class="skeleton skeleton--text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Prescriptions -->
+    <div style="margin-top:var(--space-5);">
+      <div class="flex-between" style="margin-bottom:var(--space-4);">
+        <h3 style="font-size:var(--font-size-base);font-weight:600;">Recent Prescriptions</h3>
+        <button class="btn btn--ghost btn--sm" id="view-all-rx-btn" type="button">View All →</button>
+      </div>
+      <div id="pd-prescriptions" style="display:flex;flex-direction:column;gap:var(--space-3);">
+        <div class="skeleton skeleton--card"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Prescription Modal -->
+<div class="modal-backdrop" id="rx-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="rx-modal-title">
+  <div class="modal">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="rx-modal-title">Add Prescription</div>
+        <div class="modal__subtitle" id="rx-modal-subtitle"></div>
+      </div>
+      <button class="modal__close" id="rx-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="rx-patient-id">
+      <div class="form-group">
+        <label class="form-label form-label--required" for="rx-diagnosis">Diagnosis</label>
+        <input type="text" id="rx-diagnosis" class="form-input" placeholder="e.g. Hypertension, Type 2 Diabetes" maxlength="200" aria-required="true">
+      </div>
+      <div class="form-group">
+        <label class="form-label form-label--required" for="rx-medicines">Medicines</label>
+        <textarea id="rx-medicines" class="form-input" rows="4" placeholder="List medicines, dosage and instructions…" maxlength="2000" aria-required="true"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rx-notes">Additional Notes</label>
+        <textarea id="rx-notes" class="form-input" rows="2" placeholder="Follow-up date, special instructions…" maxlength="1000"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rx-doctor">Doctor Name</label>
+        <input type="text" id="rx-doctor" class="form-input" placeholder="e.g. Dr. Ahmed Farook" maxlength="100">
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="rx-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="rx-modal-save" type="button">Save Prescription</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let currentPatient = null;
+
+async function initVerifyPage() {
+  adminSession = await requireAdminAuth(['opd', 'clinic']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  document.getElementById('search-btn').addEventListener('click', handleSearch);
+  document.getElementById('search-query').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSearch();
+  });
+
+  document.getElementById('qr-scan-btn').addEventListener('click', startQRScan);
+  document.getElementById('qr-cancel-btn').addEventListener('click', cancelQRScan);
+
+  document.getElementById('add-prescription-btn').addEventListener('click', openRxModal);
+  document.getElementById('rx-modal-close').addEventListener('click', () => closeModal('rx-modal'));
+  document.getElementById('rx-modal-cancel').addEventListener('click', () => closeModal('rx-modal'));
+  document.getElementById('rx-modal-save').addEventListener('click', saveRx);
+
+  document.getElementById('view-all-rx-btn').addEventListener('click', () => {
+    if (currentPatient) {
+      window.location.href = `/admin/patients/prescriptions.html?patient_id=${currentPatient.id}`;
+    }
+  });
+
+  document.getElementById('print-card-btn').addEventListener('click', () => {
+    if (currentPatient) window.print();
+  });
+
+  // Check URL param for pre-filled search
+  const params = new URLSearchParams(window.location.search);
+  const pid = params.get('patient_id') || params.get('q');
+  if (pid) {
+    document.getElementById('search-query').value = pid;
+    await handleSearch();
+  }
+}
+
+async function handleSearch() {
+  const query = document.getElementById('search-query').value.trim();
+  if (!query) {
+    Toast.warning('Search', 'Please enter a patient ID, NIC, name or phone number.');
+    return;
+  }
+
+  hideAllPanels();
+  document.getElementById('search-loading').style.display = '';
+
+  try {
+    const db = getDB();
+    const { data, error } = await db
+      .from('patients')
+      .select('*')
+      .or(`unique_patient_id.ilike.%${query}%,nic_number.ilike.%${query}%,full_name.ilike.%${query}%,phone_number.ilike.%${query}%`)
+      .eq('is_active', true)
+      .limit(20);
+
+    document.getElementById('search-loading').style.display = 'none';
+
+    if (error) throw new Error(error.message);
+
+    if (!data || data.length === 0) {
+      document.getElementById('no-results').style.display = '';
+      return;
+    }
+
+    if (data.length === 1) {
+      await showPatientDetail(data[0]);
+    } else {
+      showSearchResults(data);
+    }
+  } catch (err) {
+    document.getElementById('search-loading').style.display = 'none';
+    Toast.error('Search Failed', err.message);
+  }
+}
+
+function hideAllPanels() {
+  ['no-results', 'search-results', 'patient-detail', 'search-loading'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  currentPatient = null;
+}
+
+function showSearchResults(patients) {
+  const container = document.getElementById('results-list');
+  document.getElementById('results-count').textContent = patients.length;
+  container.innerHTML = patients.map(p => `
+    <div class="card card--hover" style="cursor:pointer;" onclick="selectPatient('${p.id}')" role="button" tabindex="0">
+      <div class="card__body" style="display:flex;align-items:center;gap:var(--space-4);">
+        <div style="font-size:24px;">👤</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;">${DOMPurify.sanitize(p.full_name)}</div>
+          <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">
+            ${DOMPurify.sanitize(p.unique_patient_id)} · ${p.age} yrs · ${DOMPurify.sanitize(p.gender || '')}
+          </div>
+          ${p.phone_number ? `<div style="font-size:var(--font-size-sm);color:var(--color-text-muted);">${DOMPurify.sanitize(p.phone_number)}</div>` : ''}
+        </div>
+        <div style="color:var(--color-primary);font-size:var(--font-size-lg);">→</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Store for selectPatient
+  window._searchResults = patients;
+  document.getElementById('search-results').style.display = '';
+}
+
+async function selectPatient(patientId) {
+  const p = (window._searchResults || []).find(x => x.id === patientId);
+  if (p) {
+    document.getElementById('search-results').style.display = 'none';
+    await showPatientDetail(p);
+  }
+}
+
+async function showPatientDetail(patient) {
+  currentPatient = patient;
+
+  document.getElementById('pd-name').textContent = patient.full_name;
+  document.getElementById('pd-pid').textContent = patient.unique_patient_id;
+  document.getElementById('pd-status-badge').textContent = patient.is_active ? 'Active' : 'Inactive';
+  document.getElementById('pd-status-badge').className = 'badge ' + (patient.is_active ? 'badge--active' : 'badge--inactive');
+  document.getElementById('pd-age').textContent = patient.age ? patient.age + ' years' : '—';
+  document.getElementById('pd-gender').textContent = patient.gender || '—';
+  document.getElementById('pd-nic').textContent = patient.nic_number || '—';
+  document.getElementById('pd-phone').textContent = patient.phone_number || '—';
+  document.getElementById('pd-address').textContent = patient.address || '—';
+  document.getElementById('pd-registered').textContent = patient.created_at
+    ? new Date(patient.created_at).toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo', day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
+
+  const guardianSection = document.getElementById('guardian-section');
+  if (patient.guardian_name) {
+    guardianSection.style.display = 'grid';
+    document.getElementById('pd-guardian').textContent = patient.guardian_name;
+    document.getElementById('pd-guardian-phone').textContent = patient.guardian_phone || '—';
+  } else {
+    guardianSection.style.display = 'none';
+  }
+
+  document.getElementById('patient-detail').style.display = '';
+
+  await Promise.all([
+    loadTodayBookings(patient.id),
+    loadRecentPrescriptions(patient.id),
+  ]);
+
+  await auditLog(adminSession.id, 'view_patient', 'patients', patient.id, { patient_id: patient.unique_patient_id });
+}
+
+async function loadTodayBookings(patientId) {
+  const today = new Date().toLocaleDateString('en-CA');
+  const container = document.getElementById('pd-bookings');
+
+  try {
+    const db = getDB();
+    const [opdResult, clinicResult] = await Promise.all([
+      db.from('opd_bookings').select('*, opd_slot_templates(start_time,end_time)').eq('patient_id', patientId).eq('booking_date', today),
+      db.from('clinic_bookings').select('*, clinic_schedules(clinic_name,doctor_name)').eq('patient_id', patientId).eq('booking_date', today),
+    ]);
+
+    const opdBookings = (opdResult.data || []).map(b => ({
+      type: 'OPD',
+      token: b.token_number,
+      status: b.status,
+      time: b.opd_slot_templates ? formatTimeRange(b.opd_slot_templates.start_time, b.opd_slot_templates.end_time) : '—',
+      label: 'OPD Appointment',
+    }));
+
+    const clinicBookings = (clinicResult.data || []).map(b => ({
+      type: 'Clinic',
+      token: b.token_number,
+      status: b.status,
+      time: '',
+      label: b.clinic_schedules ? (b.clinic_schedules.clinic_name + ' — ' + (b.clinic_schedules.doctor_name || '')) : 'Clinic',
+    }));
+
+    const all = [...opdBookings, ...clinicBookings];
+    if (all.length === 0) {
+      container.innerHTML = '<p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">No bookings today.</p>';
+      return;
+    }
+
+    const STATUS_CLS = { booked: 'badge--info', called: 'badge--warning', seen: 'badge--active', cancelled: 'badge--inactive', no_show: 'badge--danger' };
+
+    container.innerHTML = all.map(b => `
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);background:var(--color-bg-secondary);border-radius:var(--radius-md);">
+        <span class="badge badge--info">${b.type}</span>
+        <strong>#${b.token || '—'}</strong>
+        <span style="flex:1;color:var(--color-text-secondary);font-size:var(--font-size-sm);">${DOMPurify.sanitize(b.label)} ${b.time ? '· ' + b.time : ''}</span>
+        <span class="badge ${STATUS_CLS[b.status] || 'badge--info'}">${b.status}</span>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--color-danger-dark);font-size:var(--font-size-sm);">Failed to load bookings.</p>`;
+  }
+}
+
+async function loadRecentPrescriptions(patientId) {
+  const container = document.getElementById('pd-prescriptions');
+  try {
+    const db = getDB();
+    const { data, error } = await db
+      .from('prescriptions')
+      .select('*')
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (error) throw new Error(error.message);
+
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p style="color:var(--color-text-muted);font-size:var(--font-size-sm);">No prescriptions on record.</p>';
+      return;
+    }
+
+    container.innerHTML = data.map(rx => `
+      <div class="card" style="border-left:3px solid var(--color-primary);">
+        <div class="card__body">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);">
+            <strong>${DOMPurify.sanitize(rx.diagnosis || 'Prescription')}</strong>
+            <span style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${rx.created_at ? new Date(rx.created_at).toLocaleDateString('en-GB') : ''}</span>
+          </div>
+          ${rx.doctor_name ? `<div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin-bottom:var(--space-2);">Dr. ${DOMPurify.sanitize(rx.doctor_name)}</div>` : ''}
+          <pre style="font-size:var(--font-size-sm);white-space:pre-wrap;color:var(--color-text-secondary);font-family:inherit;margin:0;">${DOMPurify.sanitize((rx.medicines || '').substring(0, 200))}${(rx.medicines || '').length > 200 ? '…' : ''}</pre>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--color-danger-dark);font-size:var(--font-size-sm);">Failed to load prescriptions.</p>`;
+  }
+}
+
+function openRxModal() {
+  if (!currentPatient) return;
+  document.getElementById('rx-patient-id').value = currentPatient.id;
+  document.getElementById('rx-modal-subtitle').textContent = currentPatient.full_name + ' · ' + currentPatient.unique_patient_id;
+  document.getElementById('rx-diagnosis').value = '';
+  document.getElementById('rx-medicines').value = '';
+  document.getElementById('rx-notes').value = '';
+  document.getElementById('rx-doctor').value = '';
+  clearAllFormErrors(document.getElementById('rx-modal').querySelector('form') || document.getElementById('rx-modal'));
+  openModal('rx-modal');
+}
+
+async function saveRx() {
+  const patientId = document.getElementById('rx-patient-id').value;
+  const diagnosis = document.getElementById('rx-diagnosis').value.trim();
+  const medicines = document.getElementById('rx-medicines').value.trim();
+  const notes = document.getElementById('rx-notes').value.trim();
+  const doctorName = document.getElementById('rx-doctor').value.trim();
+  const saveBtn = document.getElementById('rx-modal-save');
+
+  if (!diagnosis) { Toast.warning('Validation', 'Diagnosis is required.'); return; }
+  if (!medicines) { Toast.warning('Validation', 'Medicines field is required.'); return; }
+
+  disableSubmitButton(saveBtn, 'Saving…');
+  try {
+    const db = getDB();
+    const payload = {
+      patient_id: patientId,
+      diagnosis,
+      medicines,
+      notes: notes || null,
+      doctor_name: doctorName || null,
+      created_by: adminSession.id,
+    };
+
+    const { data, error } = await db.from('prescriptions').insert(payload).select().single();
+    if (error) {
+      Toast.error('Save Failed', error.message);
+    } else {
+      await auditLog(adminSession.id, 'create_prescription', 'prescriptions', data.id, { patient_id: patientId, diagnosis });
+      Toast.success('Saved', 'Prescription saved successfully.');
+      closeModal('rx-modal');
+      await loadRecentPrescriptions(patientId);
+    }
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(saveBtn);
+  }
+}
+
+function startQRScan() {
+  document.getElementById('qr-scanner-panel').style.display = '';
+  Toast.info('QR Scan', 'QR scanner requires the html5-qrcode library. Integrate as needed.');
+}
+
+function cancelQRScan() {
+  document.getElementById('qr-scanner-panel').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', initVerifyPage);
+</script>
+</body>
+</html>

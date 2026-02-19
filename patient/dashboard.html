@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard — AMH Patient Portal</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="stylesheet" href="../assets/css/print.css">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar" role="navigation" aria-label="Patient navigation">
+  <a href="../patient/dashboard.html" class="navbar__brand" aria-label="AMH Home">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">Ashraff Hospital</span>
+      <span class="navbar__brand-sub">Patient Portal</span>
+    </div>
+  </a>
+
+  <nav class="navbar__nav" aria-label="Main navigation">
+    <a href="../patient/dashboard.html" class="navbar__link navbar__link--active" aria-current="page">
+      <span class="navbar__link-icon" aria-hidden="true">🏠</span> Dashboard
+    </a>
+    <a href="../patient/opd-booking.html" class="navbar__link">
+      <span class="navbar__link-icon" aria-hidden="true">📋</span> Book OPD
+    </a>
+    <a href="../patient/clinic-booking.html" class="navbar__link">
+      <span class="navbar__link-icon" aria-hidden="true">🏥</span> Book Clinic
+    </a>
+    <a href="../patient/booking-history.html" class="navbar__link">
+      <span class="navbar__link-icon" aria-hidden="true">📅</span> History
+    </a>
+    <a href="../patient/prescriptions.html" class="navbar__link">
+      <span class="navbar__link-icon" aria-hidden="true">💊</span> Prescriptions
+    </a>
+  </nav>
+
+  <div class="navbar__actions">
+    <div class="navbar__user" id="nav-user-info" aria-label="User account">
+      <div class="navbar__user-avatar" id="nav-avatar" aria-hidden="true">?</div>
+      <span class="navbar__user-name" id="nav-user-name">Loading...</span>
+    </div>
+    <button
+      class="navbar__logout"
+      id="logout-btn"
+      aria-label="Log out"
+      type="button"
+    >
+      🚪 Logout
+    </button>
+  </div>
+
+  <button
+    class="navbar__menu-toggle"
+    id="navbar-menu-toggle"
+    aria-label="Open menu"
+    aria-expanded="false"
+    type="button"
+  >
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- Mobile Nav -->
+<div class="navbar__mobile-nav" id="navbar-mobile-nav" aria-label="Mobile navigation">
+  <a href="../patient/dashboard.html" class="navbar__link navbar__link--active">🏠 Dashboard</a>
+  <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+  <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+  <a href="../patient/booking-history.html" class="navbar__link">📅 Booking History</a>
+  <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  <button class="navbar__logout" id="mobile-logout-btn" style="margin-top:var(--space-4); width:100%; justify-content:center;" type="button">
+    🚪 Logout
+  </button>
+</div>
+
+<!-- Main Content -->
+<main class="page-main" id="main-content" style="max-width: 960px; margin: var(--navbar-height) auto 0;">
+
+  <!-- New Registration Welcome Banner -->
+  <div id="welcome-banner" style="display:none;" class="alert alert--success mb-6" role="alert">
+    <span class="alert__icon">🎉</span>
+    <div class="alert__content">
+      <div class="alert__title">Welcome to Ashraff Hospital!</div>
+      <div class="alert__text" id="welcome-banner-text">
+        Registration successful. Your Patient ID card is shown below. Please print or download it.
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONE 1: Patient ID Card -->
+  <section aria-labelledby="card-section-title" class="mb-8">
+    <div class="section-header">
+      <div>
+        <h2 class="section-header__title" id="card-section-title">My Patient Card</h2>
+        <p class="section-header__subtitle">Your official Ashraff Hospital identity card</p>
+      </div>
+    </div>
+
+    <div id="patient-card-container">
+      <!-- Card skeleton while loading -->
+      <div class="card" style="padding: var(--space-5);">
+        <div style="display:flex; gap: var(--space-4);">
+          <div style="flex:1;">
+            <div class="skeleton skeleton--title" style="width:60%"></div>
+            <div class="skeleton skeleton--text" style="width:40%"></div>
+            <div class="skeleton skeleton--text"></div>
+            <div class="skeleton skeleton--text" style="width:70%"></div>
+          </div>
+          <div class="skeleton" style="width:128px; height:128px; border-radius:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 2: Active Booking / Countdown -->
+  <section aria-labelledby="upcoming-section-title" class="mb-8">
+    <div class="section-header">
+      <div>
+        <h2 class="section-header__title" id="upcoming-section-title">Upcoming Appointment</h2>
+        <p class="section-header__subtitle">Your next scheduled visit</p>
+      </div>
+    </div>
+
+    <div id="countdown-container">
+      <div class="card card--flat" style="padding: var(--space-5);">
+        <div class="skeleton skeleton--card"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ZONE 3: Booking Action Boxes -->
+  <section aria-labelledby="book-section-title" class="mb-8">
+    <h2 class="section-header__title" id="book-section-title" style="margin-bottom: var(--space-5);">Book an Appointment</h2>
+
+    <div class="grid grid--2" style="max-width: 600px;">
+      <a
+        href="../patient/opd-booking.html"
+        class="card card--hoverable"
+        style="text-align: center; cursor: pointer; text-decoration: none;"
+        aria-label="Book OPD appointment"
+      >
+        <div style="font-size: 48px; margin-bottom: var(--space-4);">📋</div>
+        <h3 style="font-size: var(--font-size-lg); color: var(--color-primary); margin-bottom: var(--space-2);">OPD Booking</h3>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-5);">
+          General outpatient appointments
+        </p>
+        <span class="btn btn--primary btn--full">Book Now</span>
+      </a>
+
+      <a
+        href="../patient/clinic-booking.html"
+        class="card card--hoverable"
+        style="text-align: center; cursor: pointer; text-decoration: none;"
+        aria-label="Book clinic appointment"
+      >
+        <div style="font-size: 48px; margin-bottom: var(--space-4);">🏥</div>
+        <h3 style="font-size: var(--font-size-lg); color: var(--color-primary); margin-bottom: var(--space-2);">Clinic Booking</h3>
+        <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-5);">
+          Specialist clinic appointments
+        </p>
+        <span class="btn btn--secondary btn--full">Book Now</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ZONE 4: Recent Visit History -->
+  <section aria-labelledby="history-section-title">
+    <div class="section-header">
+      <div>
+        <h2 class="section-header__title" id="history-section-title">Recent Visits</h2>
+        <p class="section-header__subtitle">Your last 5 appointments</p>
+      </div>
+      <a href="../patient/booking-history.html" class="btn btn--ghost btn--sm">View All History →</a>
+    </div>
+
+    <div id="recent-history-container">
+      <div class="table-wrapper">
+        <table class="data-table" aria-label="Recent visits">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Department</th>
+              <th scope="col">Time</th>
+              <th scope="col">Slot #</th>
+              <th scope="col">Status</th>
+              <th scope="col">Prescription</th>
+            </tr>
+          </thead>
+          <tbody id="recent-history-tbody">
+            <!-- Skeleton rows -->
+            <tr><td colspan="6"><div class="skeleton skeleton--text"></div></td></tr>
+            <tr><td colspan="6"><div class="skeleton skeleton--text" style="width:80%"></div></td></tr>
+            <tr><td colspan="6"><div class="skeleton skeleton--text" style="width:60%"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/qr.js"></script>
+<script src="../assets/js/card.js"></script>
+<script src="../assets/js/countdown.js"></script>
+
+<script>
+'use strict';
+
+let currentPatient = null;
+
+/**
+ * Initialize the patient dashboard page.
+ */
+async function initDashboard() {
+  // Auth guard
+  currentPatient = requirePatientAuth();
+  if (!currentPatient) return;
+
+  // Start inactivity detection
+  startInactivityDetection();
+
+  // Populate navbar
+  const navAvatar = document.getElementById('nav-avatar');
+  const navName = document.getElementById('nav-user-name');
+  if (navAvatar) navAvatar.textContent = getInitials(currentPatient.full_name);
+  if (navName) navName.textContent = currentPatient.full_name;
+
+  // Logout buttons
+  document.getElementById('logout-btn')?.addEventListener('click', patientLogout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', patientLogout);
+
+  // Mobile navbar toggle
+  const toggle = document.getElementById('navbar-menu-toggle');
+  const mobileNav = document.getElementById('navbar-mobile-nav');
+  toggle?.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  // Check for new registration welcome
+  const isNewRegistration = sessionStorage.getItem('amh_new_registration');
+  if (isNewRegistration) {
+    sessionStorage.removeItem('amh_new_registration');
+    const newPatientId = sessionStorage.getItem('amh_new_patient_id');
+    sessionStorage.removeItem('amh_new_patient_id');
+
+    const banner = document.getElementById('welcome-banner');
+    const bannerText = document.getElementById('welcome-banner-text');
+    if (banner) banner.style.display = 'flex';
+    if (bannerText && newPatientId) {
+      bannerText.textContent = `Welcome! Your Patient ID is ${newPatientId}. Please print or download your card below and keep it safe.`;
+    }
+  }
+
+  // Load all sections in parallel
+  await Promise.all([
+    loadPatientCard(),
+    loadUpcomingBooking(),
+    loadRecentHistory(),
+  ]);
+}
+
+/**
+ * Render the patient ID card.
+ */
+async function loadPatientCard() {
+  const container = document.getElementById('patient-card-container');
+  if (!container) return;
+  await renderPatientCard(container, currentPatient);
+}
+
+/**
+ * Load and render the upcoming booking countdown.
+ */
+async function loadUpcomingBooking() {
+  const container = document.getElementById('countdown-container');
+  if (!container) return;
+
+  try {
+    const { data: bookings, error } = await getPatientUpcomingBookings(currentPatient.id);
+
+    if (error || !bookings || bookings.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding: var(--space-8);">
+          <div class="empty-state__icon">📅</div>
+          <div class="empty-state__title">No Upcoming Appointments</div>
+          <div class="empty-state__text">
+            You have no scheduled appointments. Use the booking options below to schedule your visit.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Show the most imminent upcoming booking
+    const nextBooking = bookings[0];
+    renderCountdownCard(container, nextBooking, nextBooking.booking_type);
+
+    // If there are more bookings, show a count
+    if (bookings.length > 1) {
+      const moreDiv = document.createElement('p');
+      moreDiv.style.cssText = 'font-size:var(--font-size-sm);color:var(--color-text-muted);text-align:center;margin-top:var(--space-3);';
+      moreDiv.textContent = `+${bookings.length - 1} more upcoming appointment${bookings.length - 1 > 1 ? 's' : ''}`;
+      container.appendChild(moreDiv);
+    }
+
+  } catch (err) {
+    container.innerHTML = `
+      <div class="alert alert--danger">
+        <span class="alert__icon">⚠️</span>
+        <div class="alert__content">
+          <div class="alert__text">${sanitizeText(err.message)}</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Load and render the recent visit history table.
+ */
+async function loadRecentHistory() {
+  const tbody = document.getElementById('recent-history-tbody');
+  if (!tbody) return;
+
+  try {
+    // Fetch last 5 from both OPD and clinic
+    const [opdResult, clinicResult] = await Promise.all([
+      getPatientOPDBookings(currentPatient.id, { limit: 5 }),
+      getPatientClinicBookings(currentPatient.id, { limit: 5 }),
+    ]);
+
+    const opdBookings = (opdResult.data || []).map(b => ({
+      ...b,
+      type: 'OPD',
+      department: 'OPD',
+      start_time: b.opd_slot_templates?.start_time,
+      end_time: b.opd_slot_templates?.end_time,
+    }));
+
+    const clinicBookings = (clinicResult.data || []).map(b => ({
+      ...b,
+      type: 'Clinic',
+      department: b.clinics?.clinic_name || 'Clinic',
+      start_time: b.clinic_slot_templates?.start_time,
+      end_time: b.clinic_slot_templates?.end_time,
+    }));
+
+    // Combine and sort by booking date descending, take top 5
+    const combined = [...opdBookings, ...clinicBookings]
+      .sort((a, b) => b.booking_date.localeCompare(a.booking_date))
+      .slice(0, 5);
+
+    if (combined.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6">
+            <div class="empty-state" style="padding: var(--space-6);">
+              <div class="empty-state__icon">📋</div>
+              <div class="empty-state__title">No Visit History</div>
+              <div class="empty-state__text">Your appointment history will appear here.</div>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = combined.map(booking => {
+      const statusBadge = AMH_CONFIG.BOOKING_STATUSES[booking.status] || {};
+      const timeRange = booking.start_time ? formatTimeRange(booking.start_time, booking.end_time) : '—';
+
+      return `
+        <tr>
+          <td>${formatDate(booking.booking_date)}</td>
+          <td>
+            <span style="font-weight:600; color:var(--color-primary);">${sanitizeText(booking.department)}</span>
+          </td>
+          <td style="color:var(--color-text-secondary);">${timeRange}</td>
+          <td style="font-weight:600;">#${booking.slot_number}</td>
+          <td>
+            <span class="badge ${statusBadge.class || 'badge--pending'}">
+              ${sanitizeText(statusBadge.label || booking.status)}
+            </span>
+          </td>
+          <td>
+            ${booking.status === 'completed'
+              ? `<a href="../patient/prescriptions.html" style="color:var(--color-secondary);font-weight:600;font-size:var(--font-size-xs);">View →</a>`
+              : '<span style="color:var(--color-text-muted);font-size:var(--font-size-xs);">—</span>'
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; color:var(--color-danger); padding:var(--space-4);">
+          Failed to load history: ${sanitizeText(err.message)}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
+</body>
+</html>

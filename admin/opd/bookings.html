@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPD Bookings Queue — AMH Admin</title>
+  <link rel="icon" type="image/x-icon" href="../../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/css/main.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Admin navigation">
+  <a href="../../admin/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">AMH Admin</span>
+      <span class="navbar__brand-sub">OPD Queue</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../../admin/opd/bookings.html" class="navbar__link navbar__link--active" aria-current="page">📋 OPD Queue</a>
+    <a href="../../admin/opd/slots.html" class="navbar__link">⏰ OPD Slots</a>
+    <a href="../../admin/patients/verify.html" class="navbar__link">🔍 Verify Patient</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="admin-nav-avatar">?</div>
+      <span class="navbar__user-name" id="admin-nav-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" data-action="admin-logout" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../../admin/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../../admin/opd/bookings.html" class="navbar__link navbar__link--active">📋 OPD Queue</a>
+  <a href="../../admin/opd/slots.html" class="navbar__link">⏰ OPD Slots</a>
+  <button class="navbar__logout" data-action="admin-logout" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width:1100px;margin:var(--navbar-height) auto 0;">
+  <div class="page-header flex-between" style="flex-wrap:wrap;gap:var(--space-4);">
+    <div>
+      <h1 class="page-header__title">📋 OPD Bookings Queue</h1>
+      <p class="page-header__subtitle">View and manage daily OPD appointment bookings</p>
+    </div>
+    <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;">
+      <input type="date" id="queue-date" class="form-input" style="width:180px;" aria-label="Select date">
+      <button class="btn btn--ghost" id="refresh-btn" type="button">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:var(--space-6);">
+    <div class="stat-card">
+      <div class="stat-card__label">Total Booked</div>
+      <div class="stat-card__value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Waiting</div>
+      <div class="stat-card__value" id="stat-waiting" style="color:var(--color-warning-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Called / Seen</div>
+      <div class="stat-card__value" id="stat-seen" style="color:var(--color-success-dark);">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__label">Cancelled</div>
+      <div class="stat-card__value" id="stat-cancelled" style="color:var(--color-danger-dark);">—</div>
+    </div>
+  </div>
+
+  <!-- Filter / Search Bar -->
+  <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-5);">
+    <input type="search" id="search-input" class="form-input" placeholder="🔍 Search patient name or ID…" style="flex:1;min-width:220px;" aria-label="Search patients">
+    <select id="status-filter" class="form-input" style="width:180px;" aria-label="Filter by status">
+      <option value="">All Statuses</option>
+      <option value="booked">Booked</option>
+      <option value="called">Called</option>
+      <option value="seen">Seen</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="no_show">No Show</option>
+    </select>
+    <select id="slot-filter" class="form-input" style="width:200px;" aria-label="Filter by time slot">
+      <option value="">All Time Slots</option>
+    </select>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="table-wrapper">
+    <table class="table" id="bookings-table" aria-label="OPD bookings for selected date">
+      <thead>
+        <tr>
+          <th>Token</th>
+          <th>Patient</th>
+          <th>Patient ID</th>
+          <th>Time Slot</th>
+          <th>Status</th>
+          <th>Booked At</th>
+          <th style="text-align:right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="bookings-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:var(--space-8);">
+          <div class="spinner"></div>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <div class="empty-state__icon">📋</div>
+    <div class="empty-state__title">No Bookings Found</div>
+    <div class="empty-state__text" id="empty-state-text">No OPD bookings for the selected date and filters.</div>
+  </div>
+</main>
+
+<!-- Status Update Modal -->
+<div class="modal-backdrop" id="status-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+  <div class="modal modal--sm">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="status-modal-title">Update Booking Status</div>
+        <div class="modal__subtitle" id="status-modal-subtitle"></div>
+      </div>
+      <button class="modal__close" id="status-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body">
+      <input type="hidden" id="status-booking-id">
+      <div class="form-group">
+        <label class="form-label form-label--required" for="new-status-select">New Status</label>
+        <select id="new-status-select" class="form-input" aria-required="true">
+          <option value="booked">Booked</option>
+          <option value="called">Called</option>
+          <option value="seen">Seen</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="no_show">No Show</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="status-notes">Notes (optional)</label>
+        <textarea id="status-notes" class="form-input" rows="2" placeholder="Any notes about this visit…" maxlength="500"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="status-modal-cancel" type="button">Cancel</button>
+      <button class="btn btn--primary" id="status-modal-save" type="button">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- Patient Detail Modal -->
+<div class="modal-backdrop" id="patient-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="patient-modal-title">
+  <div class="modal">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="patient-modal-title">Patient Details</div>
+        <div class="modal__subtitle" id="patient-modal-subtitle"></div>
+      </div>
+      <button class="modal__close" id="patient-modal-close" aria-label="Close" type="button">✕</button>
+    </div>
+    <div class="modal__body" id="patient-modal-body">
+      <div class="spinner"></div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="patient-modal-close2" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../../config.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/supabase.js"></script>
+<script src="../../assets/js/audit.js"></script>
+<script src="../../assets/js/admin-auth.js"></script>
+
+<script>
+'use strict';
+
+let adminSession = null;
+let allBookings = [];
+let filteredBookings = [];
+let allSlots = [];
+
+const STATUS_LABELS = {
+  booked: { label: 'Booked', cls: 'badge--info' },
+  called: { label: 'Called', cls: 'badge--warning' },
+  seen:   { label: 'Seen',   cls: 'badge--active' },
+  cancelled: { label: 'Cancelled', cls: 'badge--inactive' },
+  no_show:   { label: 'No Show', cls: 'badge--danger' },
+};
+
+async function initOPDBookings() {
+  adminSession = await requireAdminAuth(['opd']);
+  if (!adminSession) return;
+
+  populateAdminNavbar(adminSession);
+  initAdminNavbarMobile();
+
+  // Set date to today
+  const today = getLocalDateString();
+  document.getElementById('queue-date').value = today;
+
+  document.getElementById('queue-date').addEventListener('change', loadBookings);
+  document.getElementById('refresh-btn').addEventListener('click', loadBookings);
+  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('status-filter').addEventListener('change', applyFilters);
+  document.getElementById('slot-filter').addEventListener('change', applyFilters);
+
+  document.getElementById('status-modal-close').addEventListener('click', () => closeModal('status-modal'));
+  document.getElementById('status-modal-cancel').addEventListener('click', () => closeModal('status-modal'));
+  document.getElementById('status-modal-save').addEventListener('click', saveStatus);
+  document.getElementById('patient-modal-close').addEventListener('click', () => closeModal('patient-modal'));
+  document.getElementById('patient-modal-close2').addEventListener('click', () => closeModal('patient-modal'));
+
+  await loadBookings();
+}
+
+function getLocalDateString() {
+  const now = new Date();
+  return now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+}
+
+async function loadBookings() {
+  const selectedDate = document.getElementById('queue-date').value;
+  if (!selectedDate) return;
+
+  showTableLoading();
+
+  const { data, error } = await getOPDBookingsByDate(selectedDate);
+  if (error) {
+    Toast.error('Load Failed', 'Could not load bookings: ' + error);
+    showEmptyState('Error loading bookings.');
+    return;
+  }
+
+  allBookings = data || [];
+  buildSlotFilter(allBookings);
+  applyFilters();
+  updateStats(allBookings);
+}
+
+function buildSlotFilter(bookings) {
+  const slotFilter = document.getElementById('slot-filter');
+  const slotSet = new Map();
+  bookings.forEach(b => {
+    if (b.opd_slot_templates) {
+      const tmpl = b.opd_slot_templates;
+      slotSet.set(tmpl.id, formatTimeRange(tmpl.start_time, tmpl.end_time));
+    }
+  });
+  slotFilter.innerHTML = '<option value="">All Time Slots</option>' +
+    [...slotSet.entries()].map(([id, label]) =>
+      `<option value="${id}">${DOMPurify.sanitize(label)}</option>`
+    ).join('');
+}
+
+function applyFilters() {
+  const query = document.getElementById('search-input').value.toLowerCase().trim();
+  const statusVal = document.getElementById('status-filter').value;
+  const slotVal = document.getElementById('slot-filter').value;
+
+  filteredBookings = allBookings.filter(b => {
+    const patient = b.patients || {};
+    const matchSearch = !query ||
+      (patient.full_name || '').toLowerCase().includes(query) ||
+      (patient.unique_patient_id || '').toLowerCase().includes(query);
+    const matchStatus = !statusVal || b.status === statusVal;
+    const matchSlot = !slotVal || (b.opd_slot_templates && b.opd_slot_templates.id === slotVal);
+    return matchSearch && matchStatus && matchSlot;
+  });
+
+  renderBookings(filteredBookings);
+}
+
+function updateStats(bookings) {
+  document.getElementById('stat-total').textContent = bookings.length;
+  document.getElementById('stat-waiting').textContent = bookings.filter(b => b.status === 'booked').length;
+  document.getElementById('stat-seen').textContent = bookings.filter(b => b.status === 'seen' || b.status === 'called').length;
+  document.getElementById('stat-cancelled').textContent = bookings.filter(b => b.status === 'cancelled' || b.status === 'no_show').length;
+}
+
+function showTableLoading() {
+  document.getElementById('bookings-tbody').innerHTML = `
+    <tr><td colspan="7" style="text-align:center;padding:var(--space-8);">
+      <div class="spinner"></div>
+    </td></tr>`;
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('bookings-table').style.display = '';
+}
+
+function showEmptyState(msg) {
+  document.getElementById('bookings-tbody').innerHTML = '';
+  document.getElementById('bookings-table').style.display = 'none';
+  const es = document.getElementById('empty-state');
+  document.getElementById('empty-state-text').textContent = msg || 'No bookings found.';
+  es.style.display = '';
+}
+
+function renderBookings(bookings) {
+  if (bookings.length === 0) {
+    showEmptyState('No OPD bookings match your filters for the selected date.');
+    return;
+  }
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('bookings-table').style.display = '';
+
+  const tbody = document.getElementById('bookings-tbody');
+  tbody.innerHTML = bookings.map(b => {
+    const patient = b.patients || {};
+    const tmpl = b.opd_slot_templates || {};
+    const statusInfo = STATUS_LABELS[b.status] || { label: b.status, cls: 'badge--info' };
+    const slotLabel = tmpl.start_time ? formatTimeRange(tmpl.start_time, tmpl.end_time) : '—';
+    const bookedAt = b.created_at ? formatDateTime(b.created_at) : '—';
+
+    return `
+      <tr>
+        <td><strong style="font-size:var(--font-size-lg);color:var(--color-primary);">#${b.token_number || '—'}</strong></td>
+        <td>
+          <div style="font-weight:600;">${DOMPurify.sanitize(patient.full_name || '—')}</div>
+          <div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${patient.age ? patient.age + ' yrs, ' + (patient.gender || '') : ''}</div>
+        </td>
+        <td><span style="font-family:monospace;font-size:var(--font-size-sm);">${DOMPurify.sanitize(patient.unique_patient_id || '—')}</span></td>
+        <td>${DOMPurify.sanitize(slotLabel)}</td>
+        <td><span class="badge ${statusInfo.cls}">${statusInfo.label}</span></td>
+        <td style="font-size:var(--font-size-sm);color:var(--color-text-secondary);">${bookedAt}</td>
+        <td style="text-align:right;">
+          <button class="btn btn--ghost btn--sm" onclick="openPatientModal('${b.patient_id}')" type="button">👁 View</button>
+          <button class="btn btn--primary btn--sm" onclick="openStatusModal('${b.id}', '${DOMPurify.sanitize(patient.full_name || '')}', '${b.status}')" type="button">✏️ Status</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openStatusModal(bookingId, patientName, currentStatus) {
+  document.getElementById('status-booking-id').value = bookingId;
+  document.getElementById('status-modal-subtitle').textContent = patientName;
+  document.getElementById('new-status-select').value = currentStatus;
+  document.getElementById('status-notes').value = '';
+  openModal('status-modal');
+}
+
+async function saveStatus() {
+  const bookingId = document.getElementById('status-booking-id').value;
+  const newStatus = document.getElementById('new-status-select').value;
+  const notes = document.getElementById('status-notes').value.trim();
+  const saveBtn = document.getElementById('status-modal-save');
+
+  disableSubmitButton(saveBtn, 'Saving…');
+  try {
+    const payload = { status: newStatus };
+    if (notes) payload.admin_notes = notes;
+    if (newStatus === 'seen') payload.seen_at = new Date().toISOString();
+    if (newStatus === 'called') payload.called_at = new Date().toISOString();
+
+    const { error } = await updateOPDBookingStatus(bookingId, payload);
+    if (error) {
+      Toast.error('Update Failed', error);
+    } else {
+      await auditLog(adminSession.id, 'update_opd_booking_status', 'opd_bookings', bookingId, { newStatus, notes });
+      Toast.success('Updated', 'Booking status updated.');
+      closeModal('status-modal');
+      await loadBookings();
+    }
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    enableSubmitButton(saveBtn);
+  }
+}
+
+async function openPatientModal(patientId) {
+  document.getElementById('patient-modal-body').innerHTML = '<div class="spinner"></div>';
+  openModal('patient-modal');
+
+  const { data, error } = await getPatientById(patientId);
+  if (error || !data) {
+    document.getElementById('patient-modal-body').innerHTML = `<p style="color:var(--color-danger-dark);">Failed to load patient details.</p>`;
+    return;
+  }
+
+  document.getElementById('patient-modal-title').textContent = DOMPurify.sanitize(data.full_name);
+  document.getElementById('patient-modal-subtitle').textContent = data.unique_patient_id;
+
+  document.getElementById('patient-modal-body').innerHTML = `
+    <div class="detail-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+      <div><div class="form-label">Patient ID</div><div style="font-family:monospace;font-weight:600;">${DOMPurify.sanitize(data.unique_patient_id)}</div></div>
+      <div><div class="form-label">Full Name</div><div>${DOMPurify.sanitize(data.full_name)}</div></div>
+      <div><div class="form-label">Age</div><div>${data.age} years</div></div>
+      <div><div class="form-label">Gender</div><div>${DOMPurify.sanitize(data.gender || '—')}</div></div>
+      <div><div class="form-label">NIC</div><div>${DOMPurify.sanitize(data.nic_number || '—')}</div></div>
+      <div><div class="form-label">Phone</div><div>${DOMPurify.sanitize(data.phone_number || '—')}</div></div>
+      <div style="grid-column:1/-1;"><div class="form-label">Address</div><div>${DOMPurify.sanitize(data.address || '—')}</div></div>
+      ${data.guardian_name ? `<div><div class="form-label">Guardian</div><div>${DOMPurify.sanitize(data.guardian_name)}</div></div>` : ''}
+      ${data.guardian_phone ? `<div><div class="form-label">Guardian Phone</div><div>${DOMPurify.sanitize(data.guardian_phone)}</div></div>` : ''}
+    </div>
+  `;
+}
+
+// Supabase helpers used by this page (extend supabase.js if needed)
+async function getOPDBookingsByDate(date) {
+  try {
+    const db = getDB();
+    const { data, error } = await db
+      .from('opd_bookings')
+      .select('*, patients(id,unique_patient_id,full_name,age,gender,nic_number,phone_number,address,guardian_name,guardian_phone), opd_slot_templates(id,start_time,end_time)')
+      .eq('booking_date', date)
+      .order('token_number', { ascending: true });
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+async function updateOPDBookingStatus(bookingId, payload) {
+  try {
+    const db = getDB();
+    const { error } = await db.from('opd_bookings').update(payload).eq('id', bookingId);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+async function getPatientById(patientId) {
+  try {
+    const db = getDB();
+    const { data, error } = await db.from('patients').select('*').eq('id', patientId).single();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+function formatDateTime(isoStr) {
+  if (!isoStr) return '—';
+  return new Date(isoStr).toLocaleString('en-GB', { timeZone: 'Asia/Colombo', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+document.addEventListener('DOMContentLoaded', initOPDBookings);
+</script>
+</body>
+</html>

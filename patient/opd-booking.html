@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OPD Booking — AMH Patient Portal</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar" role="navigation" aria-label="Patient navigation">
+  <a href="../patient/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">Ashraff Hospital</span>
+      <span class="navbar__brand-sub">Patient Portal</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../patient/opd-booking.html" class="navbar__link navbar__link--active" aria-current="page">📋 Book OPD</a>
+    <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+    <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+    <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="nav-avatar">?</div>
+      <span class="navbar__user-name" id="nav-user-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" id="logout-btn" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../patient/opd-booking.html" class="navbar__link navbar__link--active">📋 Book OPD</a>
+  <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+  <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+  <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  <button class="navbar__logout" id="mobile-logout-btn" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width: 800px; margin: var(--navbar-height) auto 0;">
+  <div class="page-header">
+    <h1 class="page-header__title">📋 OPD Appointment Booking</h1>
+    <p class="page-header__subtitle">Book your outpatient department appointment</p>
+  </div>
+
+  <!-- Step Indicators -->
+  <div id="booking-steps-container" aria-label="Booking progress"></div>
+
+  <!-- Step 1: Calendar -->
+  <div data-step="1" style="display:block;">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Step 1: Select a Date</h2>
+        <p class="card__subtitle">Choose an available appointment date (up to 30 days ahead)</p>
+      </div>
+      <div class="card__body">
+        <div id="calendar-container" aria-label="Appointment date calendar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Time Slot Selection -->
+  <div data-step="2" style="display:none;">
+    <button
+      class="btn btn--ghost btn--sm"
+      id="back-to-step1"
+      type="button"
+      style="margin-bottom: var(--space-4);"
+    >
+      ← Back to Calendar
+    </button>
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">Step 2: Select a Time Slot</h2>
+        <p class="card__subtitle" id="step2-date-label">Choose your preferred time</p>
+      </div>
+      <div class="card__body">
+        <div id="slot-picker-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Confirmation -->
+  <div data-step="3" style="display:none;">
+    <div id="booking-confirm-container"></div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="../assets/js/booking.js"></script>
+
+<script>
+'use strict';
+
+let currentPatient = null;
+
+async function initOPDBooking() {
+  currentPatient = requirePatientAuth();
+  if (!currentPatient) return;
+
+  startInactivityDetection();
+
+  // Navbar
+  const navAvatar = document.getElementById('nav-avatar');
+  const navName = document.getElementById('nav-user-name');
+  if (navAvatar) navAvatar.textContent = getInitials(currentPatient.full_name);
+  if (navName) navName.textContent = currentPatient.full_name;
+
+  document.getElementById('logout-btn')?.addEventListener('click', patientLogout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', patientLogout);
+
+  const menuToggle = document.getElementById('navbar-menu-toggle');
+  const mobileNav = document.getElementById('navbar-mobile-nav');
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    menuToggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  // Set booking type
+  BookingState.type = 'opd';
+  BookingState.currentStep = 1;
+
+  // Render step indicators
+  const stepsContainer = document.getElementById('booking-steps-container');
+  if (stepsContainer) {
+    stepsContainer.innerHTML = renderBookingStepsHTML('opd');
+  }
+  updateBookingSteps(1);
+
+  // Load blocked dates
+  const blockedDateStrings = await getBlockedDateStrings();
+  BookingState.blockedDates = blockedDateStrings;
+
+  // Render calendar (Step 1)
+  const calendarContainer = document.getElementById('calendar-container');
+  await renderBookingCalendar(calendarContainer, {
+    type: 'opd',
+    blockedDates: blockedDateStrings,
+    onDateSelect: handleDateSelect,
+  });
+
+  // Back to step 1 button
+  document.getElementById('back-to-step1')?.addEventListener('click', () => {
+    BookingState.selectedDate = null;
+    BookingState.selectedTemplate = null;
+    BookingState.currentStep = 1;
+    updateBookingSteps(1);
+
+    // Re-render calendar to clear selection
+    renderBookingCalendar(calendarContainer, {
+      type: 'opd',
+      blockedDates: blockedDateStrings,
+      onDateSelect: handleDateSelect,
+    });
+  });
+}
+
+/**
+ * Handle date selection — move to step 2.
+ * @param {string} dateStr
+ */
+async function handleDateSelect(dateStr) {
+  BookingState.selectedDate = dateStr;
+  BookingState.currentStep = 2;
+  updateBookingSteps(2);
+
+  // Update step 2 subtitle
+  const dateLabel = document.getElementById('step2-date-label');
+  if (dateLabel) dateLabel.textContent = `Available time boxes for ${formatDate(dateStr)}`;
+
+  const slotContainer = document.getElementById('slot-picker-container');
+  await renderSlotPicker(slotContainer, dateStr, 'opd', null, handleTemplateSelect);
+}
+
+/**
+ * Handle time slot selection — move to step 3.
+ * @param {Object} template
+ */
+function handleTemplateSelect(template) {
+  BookingState.selectedTemplate = template;
+  BookingState.currentStep = 3;
+  updateBookingSteps(3);
+
+  const confirmContainer = document.getElementById('booking-confirm-container');
+  renderBookingConfirmation(confirmContainer, BookingState, handleConfirm);
+
+  confirmContainer.addEventListener('booking:back', () => {
+    BookingState.currentStep = 2;
+    updateBookingSteps(2);
+  }, { once: true });
+}
+
+/**
+ * Handle booking confirmation submission.
+ */
+async function handleConfirm() {
+  await submitBooking(currentPatient.id, BookingState);
+}
+
+document.addEventListener('DOMContentLoaded', initOPDBooking);
+</script>
+</body>
+</html>

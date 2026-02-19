@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ashraff Hospital Kalmunai — Patient Management System. Register or log in to book appointments.">
+  <title>AMH Patient Portal — Ashraff Hospital Kalmunai</title>
+  <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+</head>
+<body>
+
+<main class="landing-bg" role="main">
+  <div class="landing-card" role="dialog" aria-label="Patient Portal Login and Registration">
+    <!-- Header -->
+    <div class="landing-card__header">
+      <div class="landing-card__logo" aria-hidden="true">🏥</div>
+      <h1 class="landing-card__hospital-name">Ashraff Hospital Kalmunai</h1>
+      <p class="landing-card__system-name">AMH Patient Management System</p>
+    </div>
+
+    <!-- Body -->
+    <div class="landing-card__body">
+      <!-- Tab Nav -->
+      <div class="landing-card__tabs" role="tablist" aria-label="Login or Register">
+        <button
+          class="landing-card__tab landing-card__tab--active"
+          id="tab-login"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-login"
+          type="button"
+        >
+          🔑 Patient Login
+        </button>
+        <button
+          class="landing-card__tab"
+          id="tab-register"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-register"
+          type="button"
+        >
+          📝 Register
+        </button>
+      </div>
+
+      <!-- Login Panel -->
+      <div id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+        <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-5); text-align: center;">
+          Enter your Patient ID and NIC to access your health records.
+        </p>
+
+        <div
+          id="admin-login-error"
+          class="alert alert--danger"
+          style="display:none; margin-bottom: var(--space-4);"
+          role="alert"
+        >
+          <span class="alert__icon">❌</span>
+          <div class="alert__content">
+            <div id="login-error-text"></div>
+          </div>
+        </div>
+
+        <form id="patient-login-form" novalidate>
+          <div class="form-group">
+            <label class="form-label form-label--required" for="patient-id-input">
+              Patient ID
+            </label>
+            <input
+              type="text"
+              id="patient-id-input"
+              name="patient_id"
+              class="form-input"
+              placeholder="e.g. AMH2026000123"
+              autocomplete="off"
+              autocapitalize="characters"
+              maxlength="20"
+              aria-required="true"
+              aria-describedby="patient-id-hint"
+            >
+            <p id="patient-id-hint" class="form-hint">Your ID was given at registration (starts with AMH)</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label form-label--required" for="nic-last4-input">
+              NIC Verification (Last 4 characters)
+            </label>
+            <input
+              type="text"
+              id="nic-last4-input"
+              name="nic_last4"
+              class="form-input"
+              placeholder="e.g. 567V or 5678"
+              autocomplete="off"
+              maxlength="4"
+              aria-required="true"
+              aria-describedby="nic-hint"
+            >
+            <p id="nic-hint" class="form-hint">Last 4 characters of your National Identity Card</p>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn--primary btn--full btn--lg"
+            style="margin-top: var(--space-2);"
+          >
+            Login to My Account
+          </button>
+        </form>
+
+        <div class="divider--text" style="margin: var(--space-5) 0;">
+          <span>Admin?</span>
+        </div>
+
+        <a
+          href="admin/login.html"
+          class="btn btn--ghost btn--full"
+          style="justify-content: center;"
+        >
+          🔐 Admin Login
+        </a>
+      </div>
+
+      <!-- Register Panel -->
+      <div id="panel-register" role="tabpanel" aria-labelledby="tab-register" style="display: none;">
+        <p style="color: var(--color-text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--space-5); text-align: center;">
+          Create a new patient account. All fields marked * are required.
+        </p>
+
+        <form id="patient-registration-form" novalidate>
+          <!-- Full Name -->
+          <div class="form-group">
+            <label class="form-label form-label--required" for="reg-full-name">Full Name</label>
+            <input
+              type="text"
+              id="reg-full-name"
+              name="full_name"
+              class="form-input"
+              placeholder="Enter your full name"
+              autocomplete="name"
+              maxlength="100"
+              aria-required="true"
+            >
+          </div>
+
+          <!-- Age and Gender -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required" for="reg-age">Age</label>
+              <input
+                type="number"
+                id="reg-age"
+                name="age"
+                class="form-input"
+                placeholder="e.g. 34"
+                min="1"
+                max="120"
+                aria-required="true"
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label form-label--required" for="reg-gender">Gender</label>
+              <select
+                id="reg-gender"
+                name="gender"
+                class="form-select"
+                aria-required="true"
+              >
+                <option value="">Select...</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div class="form-group">
+            <label class="form-label form-label--required" for="reg-address">Address</label>
+            <textarea
+              id="reg-address"
+              name="address"
+              class="form-textarea"
+              placeholder="Enter your full address"
+              rows="2"
+              maxlength="300"
+              aria-required="true"
+              style="min-height: 72px;"
+            ></textarea>
+          </div>
+
+          <!-- NIC -->
+          <div class="form-group">
+            <label class="form-label form-label--required" for="reg-nic">NIC Number</label>
+            <input
+              type="text"
+              id="reg-nic"
+              name="nic_number"
+              class="form-input"
+              placeholder="e.g. 901234567V or 200012345678"
+              autocomplete="off"
+              maxlength="12"
+              aria-required="true"
+              aria-describedby="nic-format-hint"
+            >
+            <p id="nic-format-hint" class="form-hint">Old format: 9 digits + V/X &nbsp;|&nbsp; New format: 12 digits</p>
+          </div>
+
+          <!-- Phone -->
+          <div class="form-group">
+            <label class="form-label form-label--required" for="reg-phone">Phone Number</label>
+            <input
+              type="tel"
+              id="reg-phone"
+              name="phone_number"
+              class="form-input"
+              placeholder="e.g. +94771234567 or 0771234567"
+              autocomplete="tel"
+              maxlength="15"
+              aria-required="true"
+            >
+          </div>
+
+          <!-- Guardian Fields (shown for age < 18) -->
+          <div id="guardian-fields" style="display: none;">
+            <div
+              class="alert alert--warning"
+              style="margin-bottom: var(--space-4);"
+              role="note"
+            >
+              <span class="alert__icon">👨‍👦</span>
+              <div class="alert__content">
+                <div class="alert__title">Guardian Information Required</div>
+                <div class="alert__text">Patients under 18 must provide a guardian's details.</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label form-label--required" for="reg-guardian-name">
+                Guardian Full Name
+              </label>
+              <input
+                type="text"
+                id="reg-guardian-name"
+                name="guardian_name"
+                class="form-input"
+                placeholder="Parent or guardian's full name"
+                maxlength="100"
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label form-label--required" for="reg-guardian-phone">
+                Guardian Phone Number
+              </label>
+              <input
+                type="tel"
+                id="reg-guardian-phone"
+                name="guardian_phone"
+                class="form-input"
+                placeholder="Guardian's phone number"
+                maxlength="15"
+              >
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn--secondary btn--full btn--lg"
+            style="margin-top: var(--space-2);"
+          >
+            Create Patient Account
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="
+      padding: var(--space-4) var(--space-8);
+      text-align: center;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg);
+    ">
+      <p style="font-size: var(--font-size-xs); color: var(--color-text-muted);">
+        Ashraff Hospital Kalmunai &nbsp;·&nbsp; Sri Lanka &nbsp;·&nbsp;
+        <a href="admin/login.html" style="color: var(--color-secondary);">Staff Login</a>
+      </p>
+    </div>
+  </div>
+</main>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/supabase.js"></script>
+<script src="assets/js/auth.js"></script>
+
+<script>
+  // Auto-uppercase Patient ID as user types
+  const patientIdInput = document.getElementById('patient-id-input');
+  if (patientIdInput) {
+    patientIdInput.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+  }
+
+  // Auto-uppercase NIC last 4
+  const nicLast4Input = document.getElementById('nic-last4-input');
+  if (nicLast4Input) {
+    nicLast4Input.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+  }
+
+  // Auto-uppercase NIC registration field
+  const regNicInput = document.getElementById('reg-nic');
+  if (regNicInput) {
+    regNicInput.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
+  }
+</script>
+</body>
+</html>

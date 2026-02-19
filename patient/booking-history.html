@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking History — AMH Patient Portal</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Patient navigation">
+  <a href="../patient/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">Ashraff Hospital</span>
+      <span class="navbar__brand-sub">Patient Portal</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+    <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+    <a href="../patient/booking-history.html" class="navbar__link navbar__link--active" aria-current="page">📅 History</a>
+    <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="nav-avatar">?</div>
+      <span class="navbar__user-name" id="nav-user-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" id="logout-btn" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+  <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+  <a href="../patient/booking-history.html" class="navbar__link navbar__link--active">📅 History</a>
+  <a href="../patient/prescriptions.html" class="navbar__link">💊 Prescriptions</a>
+  <button class="navbar__logout" id="mobile-logout-btn" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width: 1000px; margin: var(--navbar-height) auto 0;">
+  <div class="page-header">
+    <div>
+      <h1 class="page-header__title">📅 Booking History</h1>
+      <p class="page-header__subtitle">All your past and upcoming appointments</p>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="tabs" style="margin-bottom: var(--space-6);">
+    <div class="tabs__nav" role="tablist" aria-label="Filter bookings">
+      <button class="tabs__tab tabs__tab--active" data-filter="all" role="tab" aria-selected="true" type="button">All</button>
+      <button class="tabs__tab" data-filter="pending" role="tab" aria-selected="false" type="button">Pending</button>
+      <button class="tabs__tab" data-filter="completed" role="tab" aria-selected="false" type="button">Completed</button>
+      <button class="tabs__tab" data-filter="cancelled" role="tab" aria-selected="false" type="button">Cancelled</button>
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="card card--flat" style="padding: 0;">
+    <div class="table-wrapper" style="border-radius: var(--radius-xl); overflow: hidden;">
+      <table class="data-table" aria-label="Booking history">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Type</th>
+            <th scope="col">Department / Clinic</th>
+            <th scope="col">Time</th>
+            <th scope="col">Slot #</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="history-tbody">
+          <tr><td colspan="7" style="text-align:center; padding: var(--space-6);">
+            <div class="spinner" style="margin: 0 auto; border-color:rgba(26,60,110,0.2); border-top-color:var(--color-primary);"></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div id="pagination-container" class="pagination" role="navigation" aria-label="Pagination"></div>
+
+</main>
+
+<!-- Cancellation Confirmation Modal -->
+<div class="modal-backdrop" id="cancel-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+  <div class="modal modal--sm modal--confirm" data-confirm-only="true">
+    <div class="modal__header">
+      <div>
+        <div class="modal__title" id="cancel-modal-title" style="color:var(--color-danger-dark);">Cancel Appointment</div>
+        <div class="modal__subtitle">This action cannot be undone.</div>
+      </div>
+    </div>
+    <div class="modal__body">
+      <p style="color:var(--color-text-secondary); line-height:1.6;" id="cancel-modal-msg">Are you sure you want to cancel this appointment?</p>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" id="cancel-modal-dismiss" type="button">Keep Appointment</button>
+      <button class="btn btn--danger" id="cancel-modal-confirm" type="button">Yes, Cancel It</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/auth.js"></script>
+
+<script>
+'use strict';
+
+let currentPatient = null;
+let currentFilter = 'all';
+let currentPage = 1;
+const PAGE_SIZE = 15;
+let pendingCancelBookingId = null;
+let pendingCancelType = null;
+
+async function initHistory() {
+  currentPatient = requirePatientAuth();
+  if (!currentPatient) return;
+
+  startInactivityDetection();
+
+  const navAvatar = document.getElementById('nav-avatar');
+  const navName = document.getElementById('nav-user-name');
+  if (navAvatar) navAvatar.textContent = getInitials(currentPatient.full_name);
+  if (navName) navName.textContent = currentPatient.full_name;
+
+  document.getElementById('logout-btn')?.addEventListener('click', patientLogout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', patientLogout);
+
+  const menuToggle = document.getElementById('navbar-menu-toggle');
+  const mobileNav = document.getElementById('navbar-mobile-nav');
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    menuToggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  // Filter tabs
+  document.querySelectorAll('[data-filter]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter]').forEach(t => {
+        t.classList.remove('tabs__tab--active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('tabs__tab--active');
+      tab.setAttribute('aria-selected', 'true');
+      currentFilter = tab.dataset.filter;
+      currentPage = 1;
+      loadHistory();
+    });
+  });
+
+  // Cancellation modal buttons
+  document.getElementById('cancel-modal-dismiss')?.addEventListener('click', () => {
+    closeModal('cancel-modal');
+    pendingCancelBookingId = null;
+    pendingCancelType = null;
+  });
+
+  document.getElementById('cancel-modal-confirm')?.addEventListener('click', () => {
+    if (pendingCancelBookingId && pendingCancelType) {
+      performCancellation(pendingCancelBookingId, pendingCancelType);
+    }
+    closeModal('cancel-modal');
+  });
+
+  await loadHistory();
+}
+
+/**
+ * Load and render booking history.
+ */
+async function loadHistory() {
+  const tbody = document.getElementById('history-tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:var(--space-6);">
+    <div class="spinner" style="margin:0 auto;border-color:rgba(26,60,110,0.2);border-top-color:var(--color-primary);"></div>
+  </td></tr>`;
+
+  try {
+    const statusFilter = currentFilter === 'all' ? null : currentFilter;
+    const offset = (currentPage - 1) * PAGE_SIZE;
+
+    const [opdResult, clinicResult] = await Promise.all([
+      getPatientOPDBookings(currentPatient.id, { status: statusFilter, limit: PAGE_SIZE * 2, offset: 0 }),
+      getPatientClinicBookings(currentPatient.id, { status: statusFilter, limit: PAGE_SIZE * 2, offset: 0 }),
+    ]);
+
+    const opdRows = (opdResult.data || []).map(b => ({
+      ...b,
+      booking_type: 'opd',
+      department: 'OPD',
+      start_time: b.opd_slot_templates?.start_time,
+      end_time: b.opd_slot_templates?.end_time,
+    }));
+
+    const clinicRows = (clinicResult.data || []).map(b => ({
+      ...b,
+      booking_type: 'clinic',
+      department: b.clinics?.clinic_name || 'Clinic',
+      doctor_name: b.clinic_slot_templates?.doctor_name || b.clinics?.doctor_name,
+      start_time: b.clinic_slot_templates?.start_time,
+      end_time: b.clinic_slot_templates?.end_time,
+    }));
+
+    const all = [...opdRows, ...clinicRows].sort((a, b) =>
+      b.booking_date.localeCompare(a.booking_date)
+    );
+
+    const paginated = all.slice(offset, offset + PAGE_SIZE);
+    const totalCount = all.length;
+
+    if (paginated.length === 0) {
+      tbody.innerHTML = `
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <div class="empty-state__icon">📅</div>
+            <div class="empty-state__title">No bookings found</div>
+            <div class="empty-state__text">No appointments match the selected filter.</div>
+          </div>
+        </td></tr>
+      `;
+      document.getElementById('pagination-container').innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = paginated.map(booking => {
+      const statusConf = AMH_CONFIG.BOOKING_STATUSES[booking.status] || {};
+      const timeRange = booking.start_time ? formatTimeRange(booking.start_time, booking.end_time) : '—';
+      const canCancel = booking.status === 'pending' && booking.start_time
+        ? canCancelBooking(booking.booking_date, booking.start_time)
+        : false;
+
+      return `
+        <tr class="queue-row--${booking.status}">
+          <td>${formatDate(booking.booking_date)}</td>
+          <td>
+            <span class="badge ${booking.booking_type === 'opd' ? 'badge--verified' : 'badge--consulting'}" style="font-size:10px;">
+              ${booking.booking_type.toUpperCase()}
+            </span>
+          </td>
+          <td>
+            <div style="font-weight:600;">${sanitizeText(booking.department)}</div>
+            ${booking.doctor_name ? `<div style="font-size:var(--font-size-xs);color:var(--color-text-muted);">${sanitizeText(booking.doctor_name)}</div>` : ''}
+          </td>
+          <td style="color:var(--color-text-secondary);">${timeRange}</td>
+          <td style="font-weight:700; color:var(--color-primary);">#${booking.slot_number}</td>
+          <td>
+            <span class="badge ${statusConf.class || 'badge--pending'}">
+              ${sanitizeText(statusConf.label || booking.status)}
+            </span>
+          </td>
+          <td>
+            ${canCancel
+              ? `<button class="btn btn--danger btn--sm cancel-btn"
+                   data-booking-id="${booking.id}"
+                   data-booking-type="${booking.booking_type}"
+                   data-date="${formatDate(booking.booking_date)}"
+                   data-time="${timeRange}"
+                   type="button"
+                   aria-label="Cancel booking on ${formatDate(booking.booking_date)}"
+                 >Cancel</button>`
+              : booking.status === 'pending'
+                ? `<span class="text-muted text-xs" title="Cannot cancel within 2 hours of appointment">–</span>`
+                : `<span class="text-muted text-xs">–</span>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Attach cancel handlers
+    tbody.querySelectorAll('.cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        pendingCancelBookingId = btn.dataset.bookingId;
+        pendingCancelType = btn.dataset.bookingType;
+        const msgEl = document.getElementById('cancel-modal-msg');
+        if (msgEl) msgEl.textContent = `Cancel your ${btn.dataset.bookingType.toUpperCase()} appointment on ${btn.dataset.date} at ${btn.dataset.time}?`;
+        openModal('cancel-modal');
+      });
+    });
+
+    // Render pagination
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    renderPagination(
+      document.getElementById('pagination-container'),
+      currentPage,
+      totalPages,
+      (page) => {
+        currentPage = page;
+        loadHistory();
+      }
+    );
+
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--color-danger);padding:var(--space-4);">
+      Error loading history: ${sanitizeText(err.message)}
+    </td></tr>`;
+  }
+}
+
+/**
+ * Perform the booking cancellation.
+ * @param {string} bookingId
+ * @param {string} type
+ */
+async function performCancellation(bookingId, type) {
+  try {
+    let result;
+    if (type === 'opd') {
+      result = await cancelOPDBooking(bookingId, currentPatient.id);
+    } else {
+      result = await cancelClinicBooking(bookingId, currentPatient.id);
+    }
+
+    if (result.error) {
+      Toast.error('Cancellation Failed', result.error);
+      return;
+    }
+
+    Toast.success('Appointment Cancelled', 'Your booking has been successfully cancelled.');
+    await loadHistory();
+
+  } catch (err) {
+    Toast.error('Error', err.message);
+  } finally {
+    pendingCancelBookingId = null;
+    pendingCancelType = null;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initHistory);
+</script>
+</body>
+</html>

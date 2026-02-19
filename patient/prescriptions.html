@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Prescriptions — AMH Patient Portal</title>
+  <link rel="icon" type="image/x-icon" href="../assets/images/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+</head>
+<body>
+
+<nav class="navbar" role="navigation" aria-label="Patient navigation">
+  <a href="../patient/dashboard.html" class="navbar__brand">
+    <div class="navbar__logo" style="display:flex;align-items:center;justify-content:center;font-size:20px;">🏥</div>
+    <div class="navbar__brand-text">
+      <span class="navbar__brand-name">Ashraff Hospital</span>
+      <span class="navbar__brand-sub">Patient Portal</span>
+    </div>
+  </a>
+  <nav class="navbar__nav">
+    <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+    <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+    <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+    <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+    <a href="../patient/prescriptions.html" class="navbar__link navbar__link--active" aria-current="page">💊 Prescriptions</a>
+  </nav>
+  <div class="navbar__actions">
+    <div class="navbar__user">
+      <div class="navbar__user-avatar" id="nav-avatar">?</div>
+      <span class="navbar__user-name" id="nav-user-name">Loading...</span>
+    </div>
+    <button class="navbar__logout" id="logout-btn" type="button">🚪 Logout</button>
+  </div>
+  <button class="navbar__menu-toggle" id="navbar-menu-toggle" aria-label="Open menu" type="button">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="navbar__mobile-nav" id="navbar-mobile-nav">
+  <a href="../patient/dashboard.html" class="navbar__link">🏠 Dashboard</a>
+  <a href="../patient/opd-booking.html" class="navbar__link">📋 Book OPD</a>
+  <a href="../patient/clinic-booking.html" class="navbar__link">🏥 Book Clinic</a>
+  <a href="../patient/booking-history.html" class="navbar__link">📅 History</a>
+  <a href="../patient/prescriptions.html" class="navbar__link navbar__link--active">💊 Prescriptions</a>
+  <button class="navbar__logout" id="mobile-logout-btn" style="margin-top:var(--space-4);width:100%;justify-content:center;" type="button">🚪 Logout</button>
+</div>
+
+<main class="page-main" style="max-width: 900px; margin: var(--navbar-height) auto 0;">
+  <div class="page-header">
+    <h1 class="page-header__title">💊 My Prescriptions</h1>
+    <p class="page-header__subtitle">Prescriptions issued by Ashraff Hospital doctors (read-only)</p>
+  </div>
+
+  <div id="prescriptions-container">
+    <!-- Loading state -->
+    <div class="card" style="padding: var(--space-5);">
+      <div class="skeleton skeleton--title" style="width:50%;"></div>
+      <div class="skeleton skeleton--text"></div>
+      <div class="skeleton skeleton--text" style="width:70%;"></div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="../config.js"></script>
+<script src="../assets/js/utils.js"></script>
+<script src="../assets/js/supabase.js"></script>
+<script src="../assets/js/auth.js"></script>
+
+<script>
+'use strict';
+
+let currentPatient = null;
+
+async function initPrescriptions() {
+  currentPatient = requirePatientAuth();
+  if (!currentPatient) return;
+
+  startInactivityDetection();
+
+  const navAvatar = document.getElementById('nav-avatar');
+  const navName = document.getElementById('nav-user-name');
+  if (navAvatar) navAvatar.textContent = getInitials(currentPatient.full_name);
+  if (navName) navName.textContent = currentPatient.full_name;
+
+  document.getElementById('logout-btn')?.addEventListener('click', patientLogout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', patientLogout);
+
+  const menuToggle = document.getElementById('navbar-menu-toggle');
+  const mobileNav = document.getElementById('navbar-mobile-nav');
+  menuToggle?.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('is-open');
+    menuToggle.setAttribute('aria-expanded', isOpen);
+  });
+
+  await loadPrescriptions();
+
+  // Subscribe to realtime updates for new prescriptions
+  subscribeToPrescriptions(currentPatient.id, () => {
+    loadPrescriptions();
+    Toast.info('New Prescription', 'A new prescription has been issued for you.');
+  });
+}
+
+async function loadPrescriptions() {
+  const container = document.getElementById('prescriptions-container');
+  if (!container) return;
+
+  try {
+    const { data: prescriptions, error } = await getPatientPrescriptions(currentPatient.id);
+
+    if (error) {
+      container.innerHTML = `
+        <div class="alert alert--danger">
+          <span class="alert__icon">⚠️</span>
+          <div class="alert__content">
+            <div class="alert__title">Failed to load prescriptions</div>
+            <div class="alert__text">${sanitizeText(error)}</div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    if (!prescriptions || prescriptions.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">💊</div>
+          <div class="empty-state__title">No Prescriptions Yet</div>
+          <div class="empty-state__text">
+            Prescriptions issued by Ashraff Hospital doctors will appear here after your consultation.
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const today = getColomboDateString();
+
+    container.innerHTML = prescriptions.map(prescription => {
+      const isExpired = prescription.valid_until < today;
+      const isCollected = prescription.pharmacy_collected;
+      const medicines = Array.isArray(prescription.medicines) ? prescription.medicines : [];
+      const doctorInfo = prescription['admin_users'] || {};
+
+      return `
+        <div class="prescription-card ${isExpired ? 'prescription-card--expired' : ''}" style="margin-bottom:var(--space-5);">
+          <div class="prescription-card__header">
+            <div>
+              <div class="prescription-card__title">Prescription #${sanitizeText(prescription.id.slice(0, 8).toUpperCase())}</div>
+              <div class="prescription-card__date">Issued: ${formatDateTime(prescription.issued_at)}</div>
+            </div>
+            <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;">
+              ${isExpired
+                ? '<span class="badge badge--cancelled">EXPIRED</span>'
+                : '<span class="badge badge--active">VALID</span>'
+              }
+              ${isCollected
+                ? '<span class="badge badge--completed">COLLECTED</span>'
+                : !isExpired ? '<span class="badge badge--pending">PENDING COLLECTION</span>' : ''
+              }
+            </div>
+          </div>
+
+          <div class="prescription-card__body">
+            <!-- Doctor Info -->
+            <div class="prescription-card__doctor">
+              <div class="prescription-card__doctor-avatar" aria-hidden="true">👨‍⚕️</div>
+              <div>
+                <div class="prescription-card__doctor-name">${sanitizeText(prescription.doctor_name)}</div>
+                <div class="prescription-card__doctor-reg">Reg. No: ${sanitizeText(prescription.doctor_reg_number)}</div>
+              </div>
+            </div>
+
+            <!-- Diagnosis -->
+            ${prescription.diagnosis ? `
+              <div class="prescription-card__diagnosis" aria-label="Diagnosis">
+                <strong style="font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-muted);">Diagnosis:</strong><br>
+                ${sanitizeText(prescription.diagnosis)}
+              </div>
+            ` : ''}
+
+            <!-- Medicines -->
+            <div style="margin-bottom:var(--space-4);">
+              <div style="font-size:var(--font-size-xs);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin-bottom:var(--space-3);">
+                💊 Medicines (${medicines.length})
+              </div>
+              <div class="medicines-list">
+                ${medicines.map((med, idx) => `
+                  <div class="medicine-item">
+                    <div>
+                      <div class="medicine-item__name">${sanitizeText(med.name || '—')}</div>
+                      <div class="medicine-item__details">
+                        <span class="medicine-item__detail">Dosage: <strong>${sanitizeText(med.dosage || '—')}</strong></span>
+                        <span class="medicine-item__detail">Duration: <strong>${sanitizeText(med.duration || '—')}</strong></span>
+                      </div>
+                      ${med.instructions ? `<div style="font-size:var(--font-size-xs);color:var(--color-text-muted);margin-top:3px;">📝 ${sanitizeText(med.instructions)}</div>` : ''}
+                    </div>
+                    <span class="medicine-item__num">${idx + 1}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Notes -->
+            ${prescription.notes ? `
+              <div style="font-size:var(--font-size-sm);color:var(--color-text-secondary);background:var(--color-bg);padding:var(--space-3);border-radius:var(--radius-md);margin-bottom:var(--space-4);">
+                📝 <strong>Notes:</strong> ${sanitizeText(prescription.notes)}
+              </div>
+            ` : ''}
+
+            <!-- Footer info -->
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2);font-size:var(--font-size-xs);">
+              <span style="color:${isExpired ? 'var(--color-danger)' : 'var(--color-success)'}; font-weight:600;">
+                Valid until: ${formatDate(prescription.valid_until)}
+              </span>
+              ${isCollected && prescription.collected_at
+                ? `<span style="color:var(--color-text-muted);">Collected: ${formatDate(prescription.collected_at)}</span>`
+                : !isExpired && !isCollected
+                  ? `<span style="color:var(--color-accent);font-weight:600;">⚠️ Please collect from pharmacy</span>`
+                  : ''
+              }
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    container.innerHTML = `
+      <div class="alert alert--danger">
+        <span class="alert__icon">⚠️</span>
+        <div class="alert__content">
+          <div class="alert__text">${sanitizeText(err.message)}</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initPrescriptions);
+</script>
+</body>
+</html>
